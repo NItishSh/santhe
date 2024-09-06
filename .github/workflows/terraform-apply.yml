@@ -1,0 +1,84 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      AWS_REGION:
+        description: 'AWS region to deploy to'
+        required: true
+        default: 'ap-south-2'
+      ENVIRONMENT:
+        description: 'Deployment environment (e.g., sbx, qa, uat, pre-prd, prd)'
+        required: true
+        default: 'sbx'
+      VPC_CIDR:
+        description: 'VPC CIDR block'
+        required: true
+      ASSUME_ROLE_ARN:
+        description: 'IAM role ARN to assume'
+        required: true
+      TF_ACTIONS_WORKING_DIR:
+        description: terraform working direcory
+        required: true
+        default: './infrastructure'
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ${{ github.event.inputs.AWS_REGION }}
+      ENVIRONMENT: ${{ github.event.inputs.ENVIRONMENT }}
+      VPC_CIDR: ${{ github.event.inputs.VPC_CIDR }}
+      ASSUME_ROLE_ARN: ${{ github.event.inputs.ASSUME_ROLE_ARN }}
+
+    defaults:
+      run:
+        working-directory: ${{ github.event.inputs.TF_ACTIONS_WORKING_DIR }}
+    permissions:
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v3
+    - uses: hashicorp/setup-terraform@v2
+    - name: Terraform fmt
+      id: fmt
+      run: terraform fmt -check
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Terraform Init
+      id: init
+      run: terraform init
+    
+    - name: Terraform Validate
+      id: validate
+      run: terraform validate -no-color
+
+    - name: Terraform Plan
+      id: plan
+      run: |
+        terraform plan -no-color \
+          -var="region=${{ env.AWS_REGION }}" \
+          -var="environment=${{ env.ENVIRONMENT }}" \
+          -var="vpc_cidr=${{ env.VPC_CIDR }}" \
+          -var="assume_role_arn=${{ env.ASSUME_ROLE_ARN }}"
+
+    - name: Apply Terraform changes
+      if: ! github.event_name == 'pull_request'
+      run: |
+        terraform apply -auto-approve \
+          -var="region=${{ env.AWS_REGION }}" \
+          -var="environment=${{ env.ENVIRONMENT }}" \
+          -var="vpc_cidr=${{ env.VPC_CIDR }}" \
+          -var="assume_role_arn=${{ env.ASSUME_ROLE_ARN }}"
+
+    - name: Capture Terraform Output
+      if: ! github.event_name == 'pull_request'
+      working-directory: ./infrastructure
+      run: |
+        terraform output
