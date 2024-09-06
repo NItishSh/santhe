@@ -17,10 +17,6 @@ on:
       ASSUME_ROLE_ARN:
         description: 'IAM role ARN to assume'
         required: true
-      TF_ACTIONS_WORKING_DIR:
-        description: terraform working direcory
-        required: true
-        default: './infrastructure'
 
 jobs:
   terraform-apply:
@@ -34,7 +30,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ${{ github.event.inputs.TF_ACTIONS_WORKING_DIR }}
+        working-directory: './infrastructure'
     permissions:
       pull-requests: write
     steps:

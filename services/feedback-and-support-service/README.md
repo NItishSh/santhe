@@ -49,28 +49,28 @@ The Feedback and Support Service is responsible for managing customer inquiries,
 ## Setup and Running
 
 1. Install dependencies:
-```
-pip install -r requirements.txt
-```
+   ```
+   pip install -r requirements.txt
+   ```
 
 2. Set environment variables:
-```
-export DATABASE_URL=postgresql://user:password@host:port/dbname 
-export RASA_MODEL_PATH=/path/to/rasa/model 
-export SENDGRID_API_KEY=your_sendgrid_api_key_here 
-export TWITTER_API_KEY=your_twitter_api_key_here 
-export TWITTER_API_SECRET=your_twitter_api_secret_here
-```
+   ```
+   export DATABASE_URL=postgresql://user:password@host:port/dbname
+   export RASA_MODEL_PATH=/path/to/rasa/model
+   export SENDGRID_API_KEY=your_sendgrid_api_key_here
+   export TWITTER_API_KEY=your_twitter_api_key_here
+   export TWITTER_API_SECRET=your_twitter_api_secret_here
+   ```
 
 3. Run migrations:
-```
-alembic upgrade head
-```
+   ```
+   alembic upgrade head
+   ```
 
 4. Start the service:
-```
-uvicorn main:app --reload
-```
+   ```
+   uvicorn main:app --reload
+   ```
 
 ## Testing
 
@@ -96,3 +96,30 @@ Contributions are welcome! Please submit pull requests or issues on GitHub.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+```
+
+### Key points about this README:
+
+1. Provides an overview of the Feedback and Support Service's purpose within the Santhe platform.
+2. Lists the main features of the service.
+3. Outlines the API endpoints for various support-related operations.
+4. Specifies the dependencies required for the service, including chatbots, email services, and social media APIs.
+5. Includes setup instructions for local development.
+6. Mentions testing procedures.
+7. Points to the location of API documentation.
+8. Highlights important security considerations.
+9. Encourages contributions and specifies the license.
+
+This README serves as a good starting point for documenting the Feedback and Support Service. You may need to adjust some details based on your specific implementation choices (e.g., exact API endpoints, integration with specific chatbot tools, etc.). Remember to keep updating this file as you develop and refine the service.
+
+Citations:
+[1] https://github.com/fastapi/full-stack-fastapi-template
+[2] https://github.com/rafsaf/minimal-fastapi-postgres-template
+[3] https://github.com/mdhishaamakhtar/fastapi-sqlalchemy-postgres-template
+[4] https://facundojmaero.github.io/blog/2021/08/fastapi-db-tests/
+[5] https://dev.to/tobias-piotr/patterns-and-practices-for-using-sqlalchemy-20-with-fastapi-49n8
+[6] https://medium.com/@hasanmahira/fastapi-with-sqlalchemy-postgresql-and-alembic-1ccaba79572e
+[7] https://patrick-muehlbauer.com/articles/fastapi-with-sqlalchemy/
+[8] https://bitestreams.com/blog/fastapi-sqlalchemy/
+[9] https://christophergs.com/tutorials/ultimate-fastapi-tutorial-pt-7-sqlalchemy-database-setup/
+[10] https://medium.com/@arturocuicas/fastapi-with-postgresql-part-1-70a3960fb6ee

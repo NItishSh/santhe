@@ -25,5 +25,5 @@ variable "vpc_cidr" {
 variable "assume_role_arn" {
   type        = string
   description = "IAM role to assume for resource creation"
-  default = "arn:aws:iam::123456789100:role/my-github-actions-role"
+  # default     = "arn:aws:iam::123456789100:role/my-github-actions-role"
 }

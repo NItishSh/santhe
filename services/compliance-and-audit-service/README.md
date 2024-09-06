@@ -45,26 +45,26 @@ The Compliance and Audit Service is responsible for ensuring regulatory adherenc
 ## Setup and Running
 
 1. Install dependencies:
-```
-pip install -r requirements.txt
-```
+   ```
+   pip install -r requirements.txt
+   ```
 
 2. Set environment variables:
-```
-export DATABASE_URL=postgresql://user:password@host:port/dbname 
-export OWASP_ZAP_URL=https://your-owasp-zap-url.com 
-export JASPERREPORTS_SERVER=your_jasperreports_server_url_here
-```
+   ```
+   export DATABASE_URL=postgresql://user:password@host:port/dbname
+   export OWASP_ZAP_URL=https://your-owasp-zap-url.com
+   export JASPERREPORTS_SERVER=your_jasperreports_server_url_here
+   ```
 
 3. Run migrations:
-```
-alembic upgrade head
-```
+   ```
+   alembic upgrade head
+   ```
 
 4. Start the service:
-```
-uvicorn main:app --reload
-```
+   ```
+   uvicorn main:app --reload
+   ```
 
 ## Testing
 
@@ -90,3 +90,30 @@ Contributions are welcome! Please submit pull requests or issues on GitHub.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+```
+
+### Key points about this README:
+
+1. Provides an overview of the Compliance and Audit Service's purpose within the Santhe platform.
+2. Lists the main features of the service.
+3. Outlines the API endpoints for various compliance-related operations.
+4. Specifies the dependencies required for the service, including compliance tools and reporting engines.
+5. Includes setup instructions for local development.
+6. Mentions testing procedures.
+7. Points to the location of API documentation.
+8. Highlights important security considerations.
+9. Encourages contributions and specifies the license.
+
+This README serves as a good starting point for documenting the Compliance and Audit Service. You may need to adjust some details based on your specific implementation choices (e.g., exact API endpoints, integration with specific compliance tools, etc.). Remember to keep updating this file as you develop and refine the service.
+
+Citations:
+[1] https://github.com/mdhishaamakhtar/fastapi-sqlalchemy-postgres-template/blob/master/README.md
+[2] https://fastapi.tiangolo.com/tutorial/sql-databases/
+[3] https://github.com/tiangolo/fastapi/issues/1257
+[4] https://www.youtube.com/watch?v=gg7AX1iRnmg
+[5] https://fastapi.tiangolo.com/project-generation/
+[6] https://www.cockroachlabs.com/docs/stable/build-a-python-app-with-cockroachdb-sqlalchemy
+[7] https://medium.com/@tclaitken/setting-up-a-fastapi-app-with-async-sqlalchemy-2-0-pydantic-v2-e6c540be4308
+[8] https://www.cerbos.dev/ecosystem/fastapi
+[9] https://jnikenoueba.medium.com/using-fastapi-with-sqlalchemy-5cd370473fe5
+[10] https://docs.bemi.io/orms/sqlalchemy
