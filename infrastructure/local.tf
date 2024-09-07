@@ -1,9 +1,10 @@
 locals {
-  product = "santhe"
-  domain  = "${local.product}.store"
-  name    = "${var.environment}-${var.region}-${local.product}"
-  azs     = slice(data.aws_availability_zones.available.names, 0, 3)
-  region  = var.region
+  product      = "santhe"
+  domain       = "${local.product}.store"
+  name         = "${var.environment}-${var.region}-${local.product}"
+  azs          = slice(data.aws_availability_zones.available.names, 0, 3)
+  region       = var.region
+  need_bastion = true
   # Extract the number of bits from the VPC CIDR
   vpc_bits = tonumber(split("/", var.vpc_cidr)[1])
 

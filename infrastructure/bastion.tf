@@ -1,4 +1,5 @@
 resource "aws_instance" "bastion" {
+  count         = local.need_bastion ? 1 : 0
   ami           = data.aws_ami.amazon_linux.id
   instance_type = "t3.micro"
   subnet_id     = module.vpc.public_subnets[0]
@@ -14,6 +15,7 @@ resource "aws_instance" "bastion" {
   depends_on = [module.vpc]
 }
 module "security_group" {
+  count  = local.need_bastion ? 1 : 0
   source = "terraform-aws-modules/security-group/aws"
 
   name        = "${local.name}-bastion-sg"
