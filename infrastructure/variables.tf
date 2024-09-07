@@ -27,3 +27,22 @@ variable "assume_role_arn" {
   description = "IAM role to assume for resource creation"
   # default     = "arn:aws:iam::123456789100:role/my-github-actions-role"
 }
+variable "db_config" {
+  description = "Configuration for the PostgreSQL database"
+  type = object({
+    engine                = string
+    engine_version        = string
+    family                = string
+    major_engine_version  = string
+    instance_class        = string
+    allocated_storage     = number
+    max_allocated_storage = number
+    db_name               = string
+    username              = string
+  })
+  default = null
+}
+variable "product" {
+  type    = string
+  default = "santhe"
+}

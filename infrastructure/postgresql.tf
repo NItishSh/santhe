@@ -9,18 +9,16 @@ module "db" {
   identifier = "${local.name}-rds"
 
   # All available versions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
-  engine               = "postgres"
-  engine_version       = "14"
-  family               = "postgres14" # DB parameter group
-  major_engine_version = "14"         # DB option group
-  instance_class       = "db.t4g.large"
-
-  allocated_storage     = 20
-  max_allocated_storage = 100
-
-  db_name  = "${local.name}-database"
-  username = "${local.name}_admin"
-  port     = 5432
+  engine                = local.db_config.engine
+  engine_version        = local.db_config.engine_version
+  family                = local.db_config.family
+  major_engine_version  = local.db_config.major_engine_version
+  instance_class        = local.db_config.instance_class
+  allocated_storage     = local.db_config.allocated_storage
+  max_allocated_storage = local.db_config.max_allocated_storage
+  db_name               = local.db_config.db_name
+  username              = local.db_config.username
+  port                  = 5432
 
   multi_az               = true
   db_subnet_group_name   = module.vpc.intra_subnets
