@@ -1,4 +1,19 @@
-data "aws_caller_identity" "current" {}
+locals {
+  db_config = merge(
+    var.db_config,
+    {
+      engine                = "postgres"
+      engine_version        = "14"
+      family                = "postgres14"
+      major_engine_version  = "14"
+      instance_class        = "db.t4g.large"
+      allocated_storage     = 20
+      max_allocated_storage = 100
+      db_name               = "${var.name}-database"
+      username              = "${var.name}_admin"
+    }
+  )
+}
 
 ################################################################################
 # RDS Module
@@ -6,7 +21,8 @@ data "aws_caller_identity" "current" {}
 
 module "db" {
   source     = "terraform-aws-modules/rds/aws"
-  identifier = "${local.name}-rds"
+  version    = "6.9.0"
+  identifier = "${var.name}-rds"
 
   # All available versions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
   engine                = local.db_config.engine
@@ -21,7 +37,7 @@ module "db" {
   port                  = 5432
 
   multi_az               = true
-  db_subnet_group_name   = module.vpc.intra_subnets
+  db_subnet_group_name   = "${var.name}-db_subnet-group"
   vpc_security_group_ids = [module.security_group_postgresql.security_group_id]
 
   maintenance_window              = "Mon:00:00-Mon:03:00"
@@ -37,9 +53,9 @@ module "db" {
   performance_insights_retention_period = 7
   create_monitoring_role                = true
   monitoring_interval                   = 60
-  monitoring_role_name                  = "${local.name}-rds-monitoring-role"
+  monitoring_role_name                  = "${var.name}-rds-monitoring-role"
   monitoring_role_use_name_prefix       = false
-  monitoring_role_description           = "rds-monitoring-role for ${local.name}"
+  monitoring_role_description           = "rds-monitoring-role for ${var.name}"
 
   parameters = [
     {
@@ -60,7 +76,7 @@ module "db" {
     }
   ]
 
-  tags = local.common_tags
+  tags = var.tags
   db_option_group_tags = {
     "Sensitive" = "low"
   }
@@ -68,9 +84,9 @@ module "db" {
     "Sensitive" = "low"
   }
 
-  parameter_group_name            = local.name
+  parameter_group_name            = var.name
   parameter_group_use_name_prefix = false
-  option_group_name               = local.name
+  option_group_name               = var.name
   option_group_use_name_prefix    = false
 }
 
@@ -79,11 +95,11 @@ module "db" {
 ################################################################################
 
 module "security_group_postgresql" {
-  source = "terraform-aws-modules/security-group/aws"
-
-  name        = "${local.name}-rds-sg"
+  source      = "terraform-aws-modules/security-group/aws"
+  version     = "5.2.0"
+  name        = "${var.name}-rds-sg"
   description = "Complete PostgreSQL example security group"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = var.vpc_details.vpc_id
 
   # ingress
   ingress_with_cidr_blocks = [
@@ -92,9 +108,9 @@ module "security_group_postgresql" {
       to_port     = 5432
       protocol    = "tcp"
       description = "PostgreSQL access from within VPC"
-      cidr_blocks = module.vpc.vpc_cidr_block
+      cidr_blocks = var.vpc_details.vpc_cidr_block
     },
   ]
 
-  tags = local.common_tags
+  tags = var.tags
 }

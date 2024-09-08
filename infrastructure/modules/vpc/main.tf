@@ -6,7 +6,7 @@ locals {
   available_bits = 32 - local.vpc_bits
 
   # Number of subnet types
-  num_subnet_types = 4
+  num_subnet_types = var.num_subnet_types
 
   # Calculate bits needed for subnetting
   subnet_bits = ceil(log(local.num_subnet_types, 2))
@@ -22,12 +22,13 @@ locals {
     for i in range(local.num_subnet_types) :
     i * local.num_subnets_per_type
   ]
+  azs = slice(data.aws_availability_zones.available.names, 0, 3)
 }
 data "aws_availability_zones" "available" {}
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.13.0"
-  name    = local.name
+  name    = var.name
   cidr    = var.vpc_cidr
 
   azs                          = local.azs
@@ -46,6 +47,6 @@ module "vpc" {
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
   }
-  tags = local.common_tags
+  tags = var.tags
 }
 
