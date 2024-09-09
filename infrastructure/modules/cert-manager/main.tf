@@ -19,7 +19,19 @@ module "cert_manager" {
     templatefile("${path.module}/values.yaml", {})
   ]
 
-  set = []
+  set = [
+    {
+      name  = "crds.enabled"
+      value = true
+    },
+    {
+      name  = "crds.keep"
+      value = true
+    }
+  ]
 
   set_sensitive = []
+  # depends_on = [
+  #   helm_release.nginx_ingress
+  # ]
 }
