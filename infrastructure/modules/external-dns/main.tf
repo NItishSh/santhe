@@ -1,61 +1,24 @@
 # https://artifacthub.io/packages/helm/external-dns/external-dns
 # https://kubernetes-sigs.github.io/external-dns/v0.13.4/tutorials/aws/#iam-policy
-locals {
-  account_id = data.aws_caller_identity.current.account_id
+# https://www.dae.mn/blog/setting-up-external-dns-for-an-eks-cluster-with-terraform
+data "external" "thumb" {
+  program = ["kubergrunt", "eks", "oidc-thumbprint", "--issuer-url", var.cluster_oidc_issuer_url]
 }
-resource "aws_iam_policy" "external_dns_policy" {
-  name        = "external_dns_policy"
-  path        = "/"
-  description = "external_dns_policy"
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "route53:ChangeResourceRecordSets"
-        ],
-        Resource = [
-          "arn:aws:route53:::hostedzone/*",
-        ]
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "route53:ListHostedZones",
-          "route53:ListResourceRecordSets"
-        ],
-        Resource = [
-          "*"
-        ]
-      }
+
+resource "aws_iam_openid_connect_provider" "default" {
+  url = var.cluster_oidc_issuer_url
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = [data.external.thumb.result.thumbprint]
+}
+module "eks-external-dns" {
+    source  = "lablabs/eks-external-dns/aws"
+    version = "0.9.0"
+    cluster_identity_oidc_issuer =  var.cluster_oidc_issuer_url
+    cluster_identity_oidc_issuer_arn = aws_iam_openid_connect_provider.default.arn
+    policy_allowed_zone_ids = [
+        var.route_53_zone_id  # zone id of your hosted zone
     ]
-  })
-}
-module "external_dns" {
-  source  = "terraform-module/release/helm"
-  version = "2.6.0"
-
-  namespace  = "external-dns"
-  repository = "https://kubernetes-sigs.github.io/external-dns/"
-  app = {
-    name          = "external-dns"
-    version       = "v1.14.5"
-    chart         = "external-dns"
-    force_update  = true
-    wait          = false
-    recreate_pods = false
-    deploy        = 1
+    settings = {
+    "policy" = "sync" # syncs DNS records with ingress and services currently on the cluster.
   }
-
-  values = [
-    templatefile("${path.module}/values.yaml", {})
-  ]
-
-  set = [{
-    name  = serviceAccount.annotations
-    value = "eks.amazonaws.com/role-arn: arn:aws:iam::${local.account_id}:role/${EXTERNALDNS_ROLE_NAME}"
-  }]
-
-  set_sensitive = []
 }
