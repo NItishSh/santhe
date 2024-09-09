@@ -32,6 +32,7 @@ module "eks" {
   }
   domain = local.domain
   tags   = local.common_tags
+  depends_on = [ module.vpc ]
 }
 
 module "postgresql" {
@@ -44,6 +45,7 @@ module "postgresql" {
     vpc_cidr_block = module.vpc.vpc_cidr_block
     intra_subnets  = module.vpc.intra_subnets
   }
+  depends_on = [ module.vpc ]
 }
 module "bastion" {
   source      = "./modules/bastion"
@@ -54,4 +56,5 @@ module "bastion" {
     intra_subnets_cidr_blocks = module.vpc.intra_subnets_cidr_blocks
   }
   tags = local.common_tags
+  depends_on = [ module.vpc ]
 }

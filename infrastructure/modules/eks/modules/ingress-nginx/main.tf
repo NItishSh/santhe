@@ -15,9 +15,7 @@ module "ingress_nginx" {
     deploy        = 1
   }
 
-  values = [
-    templatefile("${path.module}/values.yaml", {})
-  ]
+  values = []
 
   set = [
     {

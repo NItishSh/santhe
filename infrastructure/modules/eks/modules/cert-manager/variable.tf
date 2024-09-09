@@ -1,7 +1,7 @@
 variable "domain" {
   type = string
 }
-variable "ISSUER_EMAIL" {
+variable "issuer_email" {
   type        = string
   description = "cert-manager cluster issuer email"
 }

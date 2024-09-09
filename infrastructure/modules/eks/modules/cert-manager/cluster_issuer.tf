@@ -1,6 +1,6 @@
 resource "kubernetes_manifest" "clusterissuer_letsencrypt_prod" {
   depends_on = [
-    helm_release.cert_manager
+    module.cert_manager
   ]
 
   manifest = {
@@ -11,7 +11,7 @@ resource "kubernetes_manifest" "clusterissuer_letsencrypt_prod" {
     }
     spec = {
       acme = {
-        email = var.ISSUER_EMAIL
+        email = var.issuer_email
         privateKeySecretRef = {
           name = "letsencrypt-prod"
         }

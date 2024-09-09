@@ -15,9 +15,7 @@ module "cert_manager" {
     deploy        = 1
   }
 
-  values = [
-    templatefile("${path.module}/values.yaml", {})
-  ]
+  values = []
 
   set = [
     {
@@ -31,7 +29,4 @@ module "cert_manager" {
   ]
 
   set_sensitive = []
-  # depends_on = [
-  #   helm_release.nginx_ingress
-  # ]
 }

@@ -1,3 +1,4 @@
+data "aws_caller_identity" "current" {}
 module "external_dns" {
   source  = "terraform-module/release/helm"
   version = "2.6.0"
@@ -14,9 +15,7 @@ module "external_dns" {
     deploy        = 1
   }
 
-  values = [
-    templatefile("${path.module}/values.yaml", {})
-  ]
+  values = []
 
   set = [
     {
@@ -29,7 +28,7 @@ module "external_dns" {
     },
     {
       name  = "domainFilters[0]"
-      value = var.domain_name
+      value = var.domain
     }
   ]
 

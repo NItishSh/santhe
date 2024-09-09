@@ -14,15 +14,7 @@ module "kube_prometheus_stack" {
     deploy        = 1
   }
 
-  values = [
-    templatefile("${path.module}/values.yaml", {
-      prometheus = {
-        server = {
-          retention = "120h"
-        }
-      }
-    })
-  ]
+  values = []
 
   set = []
 
