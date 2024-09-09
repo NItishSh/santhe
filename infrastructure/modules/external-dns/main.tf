@@ -1,24 +1,37 @@
-# https://artifacthub.io/packages/helm/external-dns/external-dns
-# https://kubernetes-sigs.github.io/external-dns/v0.13.4/tutorials/aws/#iam-policy
-# https://www.dae.mn/blog/setting-up-external-dns-for-an-eks-cluster-with-terraform
-data "external" "thumb" {
-  program = ["kubergrunt", "eks", "oidc-thumbprint", "--issuer-url", var.cluster_oidc_issuer_url]
-}
+module "external_dns" {
+  source  = "terraform-module/release/helm"
+  version = "2.6.0"
 
-resource "aws_iam_openid_connect_provider" "default" {
-  url = var.cluster_oidc_issuer_url
-  client_id_list = ["sts.amazonaws.com"]
-  thumbprint_list = [data.external.thumb.result.thumbprint]
-}
-module "eks-external-dns" {
-    source  = "lablabs/eks-external-dns/aws"
-    version = "0.9.0"
-    cluster_identity_oidc_issuer =  var.cluster_oidc_issuer_url
-    cluster_identity_oidc_issuer_arn = aws_iam_openid_connect_provider.default.arn
-    policy_allowed_zone_ids = [
-        var.route_53_zone_id  # zone id of your hosted zone
-    ]
-    settings = {
-    "policy" = "sync" # syncs DNS records with ingress and services currently on the cluster.
+  namespace  = "kube-system"
+  repository = "https://charts.bitnami.com/bitnami"
+  app = {
+    name          = "external-dns"
+    version       = "8.3.7"
+    chart         = "external-dns"
+    force_update  = true
+    wait          = false
+    recreate_pods = false
+    deploy        = 1
   }
+
+  values = [
+    templatefile("${path.module}/values.yaml", {})
+  ]
+
+  set = [
+    {
+      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+      value = aws_iam_role.external_dns.arn
+    },
+    {
+      name  = "provider"
+      value = "aws"
+    },
+    {
+      name  = "domainFilters[0]"
+      value = var.domain_name
+    }
+  ]
+
+  set_sensitive = []
 }
