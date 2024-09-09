@@ -34,12 +34,6 @@ module "eks" {
   tags   = local.common_tags
 }
 
-module "argo" {
-  source                = "./modules/argo"
-  cluster_id            = module.eks.cluster_id
-  region                = var.region
-  cluster_iam_role_name = module.eks.cluster_iam_role_name
-}
 module "postgresql" {
   source    = "./modules/postgresql"
   tags      = local.common_tags
