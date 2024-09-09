@@ -3,7 +3,7 @@ module "cert_manager" {
   source  = "terraform-module/release/helm"
   version = "2.6.0"
 
-  namespace  = "cert-manager"
+  namespace  = "kube-system"
   repository = "https://charts.jetstack.io"
   app = {
     name          = "cert-manager"
