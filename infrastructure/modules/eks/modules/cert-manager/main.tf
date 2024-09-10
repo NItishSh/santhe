@@ -6,13 +6,15 @@ module "cert_manager" {
   namespace  = "kube-system"
   repository = "https://charts.jetstack.io"
   app = {
-    name          = "cert-manager"
-    version       = "v1.15.3"
-    chart         = "cert-manager"
-    force_update  = true
-    wait          = false
-    recreate_pods = false
-    deploy        = 1
+    name             = "cert-manager"
+    version          = "v1.15.3"
+    chart            = "cert-manager"
+    force_update     = true
+    wait             = true
+    recreate_pods    = false
+    deploy           = 1
+    atomic           = true
+    create_namespace = true
   }
 
   values = []

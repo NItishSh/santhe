@@ -6,13 +6,15 @@ module "external_dns" {
   namespace  = "kube-system"
   repository = "https://charts.bitnami.com/bitnami"
   app = {
-    name          = "external-dns"
-    version       = "8.3.7"
-    chart         = "external-dns"
-    force_update  = true
-    wait          = false
-    recreate_pods = false
-    deploy        = 1
+    name             = "external-dns"
+    version          = "8.3.7"
+    chart            = "external-dns"
+    force_update     = true
+    wait             = true
+    recreate_pods    = false
+    deploy           = 1
+    atomic           = true
+    create_namespace = true
   }
 
   values = []

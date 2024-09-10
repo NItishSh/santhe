@@ -5,13 +5,15 @@ module "kube_prometheus_stack" {
   namespace  = "monitoring"
   repository = "https://prometheus-community.github.io/helm-charts"
   app = {
-    name          = "kube-prometheus-stack"
-    version       = "62.6.0"
-    chart         = "kube-prometheus-stack"
-    force_update  = true
-    wait          = false
-    recreate_pods = false
-    deploy        = 1
+    name             = "kube-prometheus-stack"
+    version          = "62.6.0"
+    chart            = "kube-prometheus-stack"
+    force_update     = true
+    wait             = true
+    recreate_pods    = false
+    deploy           = 1
+    atomic           = true
+    create_namespace = true
   }
 
   values = []
