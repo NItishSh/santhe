@@ -54,7 +54,7 @@ module "ingress" {
 module "cert_manager" {
   source       = "./modules/cert-manager"
   domain       = var.domain
-  issuer_email = "" //TODO: add a appropriate email here.
+  issuer_email = "csnitish@gmial.com" //TODO: add a appropriate email here.
   depends_on   = [module.ingress]
 }
 module "external_dns" {

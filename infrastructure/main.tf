@@ -9,7 +9,12 @@ module "vpc" {
   vpc_cidr = var.vpc_cidr
   tags     = local.common_tags
 }
-
+module "ecr" {
+  count  = local.ecr_enabled
+  source = "./modules/ecr"
+  name   = local.name
+  tags   = local.common_tags
+}
 module "eks" {
   source          = "./modules/eks"
   cluster_name    = "${local.name}-al2023"
