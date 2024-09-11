@@ -83,6 +83,7 @@ async def filter_products(min_price: float | None = None, max_price: float | Non
     
     return list(query.all())
 
+# Add Swagger UI documentation
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
