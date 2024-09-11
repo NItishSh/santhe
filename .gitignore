@@ -36,3 +36,150 @@ override.tf.json
 .terraformrc
 terraform.rc
 cidrs.md
+
+# Python-specific
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+
+# SQLAlchemy
+sqlalchemy/*.db
+
+# FastAPI
+.env
+
+# Docker
+.DS_Store
+.dockerenv
+docker-compose.override.yml
+docker-compose.swarm.yml
+docker-compose.prod.yml
+docker-compose.test.yml
+Dockerfile*
+
+# Git
+.gitignore
+.gitattributes
+
+# IDEs
+.vscode/
+
+# OS-specific
+.AppleDouble
+.LSOverride
+
+# Miscellaneous
+__pycache__
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+*.zip
+*.tar
+*.bz2
+*.xz
+*.lzma
+*.7z
+*.jar
+*.war
+*.ear
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.a
+*.lib
+*.bin
+*.conf
+*.ini
+*.cfg
+*.config
+*.properties
+*.sh
+*.command
+*.ps1
+*.bat
+*.cmd
+*.vb
+*.vbs
+*.rb
+*.rake
+*.php
+*.perl
+*.cgi
+*.pl
+*.pm
+*.t
+*.js
+*.html
+*.htm
+*.css
+*.less
+*.scss
+*.sass
+*.xml
+*.yaml
+*.yml
+*.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Virtualenv
+venv/
+ENV/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
