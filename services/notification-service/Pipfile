@@ -4,11 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "==0.85.0"
-uvicorn = "==0.17.6"
-sqlalchemy = "==1.4.39"
-psycopg2-binary = "==2.9.5"
-pytest = "==7.1.2"
+fastapi = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+pydantic = "*"
+uvicorn = "*"
+twilio = "*"
+sendgrid = "*"
+pika = "*"
 
 [dev-packages]
 

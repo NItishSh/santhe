@@ -106,4 +106,40 @@ After running the script, your project will have the following structure:
     ├── requirements.txt
     ├── README.md
     └── Makefile
+└── /order-management-service
+    ├── /src
+    │   ├── __init__.py
+    │   └── main.py
+    ├── /tests
+    │   └── test_inventory.py
+    ├── /config
+    │   └── settings.py
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── README.md
+    └── Makefile
+└── /review-and-rating-service
+    ├── /src
+    │   ├── __init__.py
+    │   └── main.py
+    ├── /tests
+    │   └── test_inventory.py
+    ├── /config
+    │   └── settings.py
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── README.md
+    └── Makefile
+└── /notification-service
+    ├── /src
+    │   ├── __init__.py
+    │   └── main.py
+    ├── /tests
+    │   └── test_inventory.py
+    ├── /config
+    │   └── settings.py
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── README.md
+    └── Makefile
 ```

@@ -1,0 +1,5 @@
+fastapi==0.70.0
+sqlalchemy==1.4.29
+psycopg2-binary==2.9.3
+alembic==1.7.5
+pydantic==1.8.2
