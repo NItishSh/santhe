@@ -10,7 +10,7 @@ variable "cluster_addons" {
   type        = map(object({}))
   default = {
     coredns                = {}
-    # eks-pod-identity-agent = {} //TODO: may be i need to replac this with kube2iam
+    eks-pod-identity-agent = {}
     kube-proxy             = {}
     vpc-cni                = {}
   }
