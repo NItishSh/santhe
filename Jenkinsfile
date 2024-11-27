@@ -1,10 +1,19 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'DOCKER_IMAGE', defaultValue: 'your-image-name', description: 'Docker image name')
+    }
+
     environment {
-        DOCKER_IMAGE = "your-image-name"
         SEMVER_FILE = "semver.txt"
         GIT_COMMIT_SHORT = "${env.GIT_COMMIT.take(7)}"
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        ansiColor('xterm')
     }
 
     stages {
@@ -32,16 +41,10 @@ pipeline {
                         patch = 0
                     }
 
-                    def preRelease = ""
-                    if (env.BRANCH_NAME == "main") {
-                        preRelease = ""
-                    } else if (env.BRANCH_NAME == "develop") {
-                        preRelease = "-beta.${env.BUILD_NUMBER}"
-                    } else if (env.BRANCH_NAME.startsWith("feature/")) {
-                        preRelease = "-alpha.${env.BUILD_NUMBER}"
-                    } else {
-                        preRelease = "-rc.${env.BUILD_NUMBER}"
-                    }
+                    def preRelease = env.BRANCH_NAME == "main" ? "" :
+                                     env.BRANCH_NAME == "develop" ? "-beta.${env.BUILD_NUMBER}" :
+                                     env.BRANCH_NAME.startsWith("feature/") ? "-alpha.${env.BUILD_NUMBER}" :
+                                     "-rc.${env.BUILD_NUMBER}"
 
                     def newVersion = "${major}.${minor}.${patch}${preRelease}"
                     writeFile file: SEMVER_FILE, text: newVersion
@@ -53,38 +56,8 @@ pipeline {
         stage('Lint') {
             steps {
                 script {
-                    echo "Running lint checks..."
-                    // Example: For a JavaScript/Node.js project
-                    sh 'npm install eslint'
-                    sh 'npx eslint .'
-
-                    // Example: For a Python project
-                    sh 'pip install flake8'
-                    sh 'flake8 .'
-                }
-            }
-        }
-
-        stage('Static Code Analysis') {
-            steps {
-                script {
-                    echo "Running static code analysis..."
-                    // Example: Using SonarQube for comprehensive analysis
-                    withSonarQubeEnv('SonarQube') { // Assuming SonarQube is configured in Jenkins
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=your-project-key'
-                    }
-                    
-                    // Example: Running SpotBugs for a Java project
-                    sh 'mvn spotbugs:check'
-                }
-            }
-            post {
-                success {
-                    echo "Static analysis completed successfully!"
-                }
-                failure {
-                    echo "Static analysis failed."
-                    error("Static code analysis failed.")
+                    echo "Running lint checks using Docker..."
+                    sh "docker build --target lint -t ${params.DOCKER_IMAGE}:${env.BUILD_NUMBER}-lint ."
                 }
             }
         }
@@ -92,12 +65,8 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def version = readFile(SEMVER_FILE).trim()
-                    echo "Building version: ${version}"
-                    // Insert your build commands here, e.g., Maven, Gradle, npm, etc.
-                    // sh 'mvn clean install'
-                    // sh 'gradle build'
-                    // sh 'npm install && npm run build'
+                    echo "Building the application using Docker..."
+                    sh "docker build --target build -t ${params.DOCKER_IMAGE}:${env.BUILD_NUMBER}-build ."
                 }
             }
         }
@@ -105,16 +74,23 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo "Running tests..."
-                    // Insert your test commands here
-                    // sh 'mvn test'
-                    // sh 'gradle test'
-                    // sh 'npm test'
+                    echo "Running tests using Docker..."
+                    sh "docker build --target test -t ${params.DOCKER_IMAGE}:${env.BUILD_NUMBER}-test ."
                 }
             }
             post {
                 always {
-                    junit '**/target/test-reports/*.xml'
+                    junit '**/target/test-reports/*.xml' // Adjust the path based on your project
+                    echo 'Tests completed'
+                }
+            }
+        }
+
+        stage('Static Code Analysis') {
+            steps {
+                script {
+                    echo "Running static code analysis using Docker..."
+                    sh "docker build --target static-analysis -t ${params.DOCKER_IMAGE}:${env.BUILD_NUMBER}-static-analysis ."
                 }
             }
         }
@@ -124,7 +100,7 @@ pipeline {
                 script {
                     def version = readFile(SEMVER_FILE).trim()
                     echo "Packaging version: ${version}"
-                    sh "docker build -t ${DOCKER_IMAGE}:${version} ."
+                    sh "docker build --target production -t ${params.DOCKER_IMAGE}:${version} ."
                 }
             }
         }
@@ -140,7 +116,7 @@ pipeline {
                 script {
                     def version = readFile(SEMVER_FILE).trim()
                     echo "Publishing version: ${version}"
-                    sh "docker push ${DOCKER_IMAGE}:${version}"
+                    sh "docker push ${params.DOCKER_IMAGE}:${version}"
 
                     sh "git tag -a ${version} -m 'Release ${version}'"
                     sh "git push origin ${version}"
@@ -152,9 +128,11 @@ pipeline {
     post {
         success {
             echo 'Build completed successfully!'
+            // Add notification logic here (e.g., Slack or email)
         }
         failure {
             echo 'Build failed.'
+            // Add notification logic here (e.g., Slack or email)
         }
         always {
             cleanWs()

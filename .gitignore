@@ -71,11 +71,11 @@ sqlalchemy/*.db
 # Docker
 .DS_Store
 .dockerenv
-docker-compose.override.yml
-docker-compose.swarm.yml
-docker-compose.prod.yml
-docker-compose.test.yml
-Dockerfile*
+# docker-compose.override.yml
+# docker-compose.swarm.yml
+# docker-compose.prod.yml
+# docker-compose.test.yml
+# Dockerfile*
 
 # Git
 .gitignore
