@@ -1,5 +1,5 @@
 module "zones" {
-  source      = "./modules/rote53"
+  source      = "./modules/route53"
   domain_name = local.domain
   tags        = local.common_tags
 }
