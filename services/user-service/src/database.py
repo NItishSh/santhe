@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from alembic import command
 from alembic.config import Config
-from app.models import Base
+from .models import Base
 from config.settings import settings
 
 engine = create_engine(settings.DATABASE_URL)
@@ -26,5 +26,7 @@ def get_db():
         db.close()
 
 
-create_db()
-run_migrations()
+
+if __name__ == "__main__":
+    create_db()
+    run_migrations()

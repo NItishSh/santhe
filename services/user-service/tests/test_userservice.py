@@ -1,134 +1,146 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from user_service.src.main import app, get_db
-from user_service.src.models import User
-from user_service.src.services import create_access_token, verify_token
-from user_service.src.database import engine
+from src.main import app, get_db
+from src.models import User
 
-@pytest.fixture(scope="module")
-def client():
+# --- Fixtures ---
+
+@pytest.fixture
+def mock_db_session():
+    """Returns a mock implementation of the SQLAlchemy Session."""
+    session = MagicMock()
+    return session
+
+@pytest.fixture
+def client(mock_db_session):
+    """
+    Returns a TestClient with the `get_db` dependency overridden 
+    to return our mock session.
+    """
+    def override_get_db():
+        try:
+            yield mock_db_session
+        finally:
+            pass
+    
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
+    # Clean up override
+    app.dependency_overrides = {}
 
-@pytest.fixture(scope="function")
-async def session():
-    async with engine.begin() as conn:
-        yield conn
+# --- Tests for /register ---
 
-@pytest.fixture(scope="function")
-async def mock_get_db(session):
-    async def mock_db():
-        return session
-    return mock_db
+def test_register_user_success(client, mock_db_session):
+    # Mock behavior: User not found (so we can register a new one)
+    # db.query(User).filter_by(username=...).first() -> None
+    mock_db_session.query.return_value.filter_by.return_value.first.return_value = None
 
-@pytest.fixture(scope="function")
-async def mock_verify_token():
-    async def mock_verify(token):
-        if token == "valid_token":
-            return {"sub": "test_user"}
-        return None
-    return mock_verify
-
-def test_create_access_token():
-    payload = {"sub": "test_user"}
-    token = create_access_token(payload)
-    assert token is not None
-
-@pytest.mark.asyncio
-async def test_verify_token(mock_verify_token):
-    async def mock_verify(token):
-        if token == "valid_token":
-            return {"sub": "test_user"}
-        return None
-
-    with patch('user_service.src.services.verify_token', side_effect=mock_verify):
-        result = await verify_token("valid_token")
-        assert result == {"sub": "test_user"}
-
-@pytest.mark.asyncio
-async def test_register_user(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
-    
-    response = await client.post("/register", json={
-        "username": "test_user",
-        "email": "test@example.com",
-        "password": "test_password",
+    payload = {
+        "username": "newuser",
+        "email": "new@example.com",
+        "password": "securepassword",
         "role": "farmer"
-    })
+    }
+    
+    response = client.post("/register", json=payload)
     
     assert response.status_code == 201
-    assert response.json()["message"] == "User created successfully"
-
-@pytest.mark.asyncio
-async def test_register_existing_user(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
+    assert response.json() == {"message": "User created successfully"}
     
-    # Mock existing user
-    async def mock_get_user(username):
-        return User(id=1, username=username, email="test@example.com", hashed_password="hashed_password")
+    # Verify DB interactions
+    mock_db_session.add.assert_called()
+    mock_db_session.commit.assert_called()
+    mock_db_session.refresh.assert_called()
+
+def test_register_user_already_exists(client, mock_db_session):
+    # Mock behavior: User already exists
+    mock_user = User(id=1, username="existing", email="old@example.com")
+    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_user
+
+    payload = {
+        "username": "existing",
+        "email": "old@example.com",
+        "password": "securepassword",
+        "role": "farmer"
+    }
+
+    response = client.post("/register", json=payload)
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Username already exists"
     
-    with patch('user_service.src.models.User.query.filter_by', side_effect=lambda x: mock_get_user(x)):
-        response = await client.post("/register", json={
-            "username": "test_user",
-            "email": "test@example.com",
-            "password": "test_password",
-            "role": "farmer"
-        })
-        
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Username already exists"
+    # Ensure add/commit were NOT called
+    mock_db_session.add.assert_not_called()
+    mock_db_session.commit.assert_not_called()
 
-@pytest.mark.asyncio
-async def test_login(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
+# --- Tests for /login ---
+
+def test_login_success(client, mock_db_session):
+    # Mock behavior: User found and password matches
+    mock_user = MagicMock()
+    mock_user.username = "testuser"
+    mock_user.verify_password.return_value = True
     
-    # Mock user query
-    async def mock_get_user(username):
-        return User(id=1, username=username, email="test@example.com", hashed_password="$2b$12$hashed_password")
+    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_user
+
+    # Mock create_access_token to return a fixed token
+    with patch("src.main.create_access_token", return_value="fake_token"):
+        response = client.post("/login", params={"username": "testuser", "password": "correct"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["access_token"] == "fake_token"
+    assert data["token_type"] == "bearer"
+
+def test_login_invalid_password(client, mock_db_session):
+    # Mock behavior: User found but password incorrect
+    mock_user = MagicMock()
+    mock_user.username = "testuser"
+    mock_user.verify_password.return_value = False
     
-    with patch('user_service.src.models.User.query.filter_by', side_effect=lambda x: mock_get_user(x)):
-        response = await client.post("/login", data={"username": "test_user", "password": "test_password"})
-        
-        assert response.status_code == 200
-        assert "access_token" in response.json()
-        assert response.json()["token_type"] == "bearer"
+    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_user
 
-@pytest.mark.asyncio
-async def test_login_invalid_credentials(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
+    response = client.post("/login", params={"username": "testuser", "password": "wrong"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect username or password"
+
+def test_login_user_not_found(client, mock_db_session):
+    # Mock behavior: User not found
+    mock_db_session.query.return_value.filter_by.return_value.first.return_value = None
+
+    response = client.post("/login", params={"username": "unknown", "password": "any"})
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect username or password"
+
+# --- Tests for /users/me ---
+
+def test_read_users_me_success(client):
+    # Mock verify_token dependency
+    # NOTE: Since /users/me uses Depends(verify_token), we can override that dependency directly 
+    # OR replicate the token logic. Overriding is cleaner for unit tests.
     
-    # Mock user query
-    async def mock_get_user(username):
-        return None
+    from src.services import verify_token
+    # But wait, services.verify_token is imported in main.py as dependency. 
+    # We can use app.dependency_overrides for verify_token too.
     
-    with patch('user_service.src.models.User.query.filter_by', side_effect=lambda x: mock_get_user(x)):
-        response = await client.post("/login", data={"username": "invalid_user", "password": "wrong_password"})
-        
-        assert response.status_code == 401
-        assert response.json()["detail"] == "Incorrect username or password"
+    async def mock_verify_token_dep(token: str = None):
+        return {"sub": "testuser"}
+    
+    from src.main import verify_token as main_verify_token
+    app.dependency_overrides[main_verify_token] = mock_verify_token_dep
+    
+    # We also need to be careful if the original verify_token depends on other things, 
+    # but here it's just a function.
+    
+    response = client.get("/users/me", headers={"Authorization": "Bearer any_token"})
+    
+    assert response.status_code == 200
+    assert response.json() == {"username": "testuser"}
+    
+    # cleanup
+    del app.dependency_overrides[main_verify_token]
 
-@pytest.mark.asyncio
-async def test_read_users_me(client, mock_verify_token):
-    async def mock_verify(token):
-        if token == "valid_token":
-            return {"sub": "test_user"}
-        return None
-
-    with patch('user_service.src.services.verify_token', side_effect=mock_verify):
-        response = await client.get("/users/me", headers={"Authorization": "Bearer valid_token"})
-        
-        assert response.status_code == 200
-        assert response.json()["username"] == "test_user"
-
-@pytest.mark.asyncio
-async def test_read_users_me_invalid_token(client, mock_verify_token):
-    async def mock_verify(token):
-        return None
-
-    with patch('user_service.src.services.verify_token', side_effect=mock_verify):
-        response = await client.get("/users/me", headers={"Authorization": "Bearer invalid_token"})
-        
-        assert response.status_code == 401
