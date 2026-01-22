@@ -1,15 +1,11 @@
-# src/models.py
-
-from sqlalchemy import Column, Integer, String, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Float
+from .database import Base
 import uuid
-
-Base = declarative_base()
 
 class Review(Base):
     __tablename__ = "reviews"
 
-    id = Column(String(36), primary_key=True, default=uuid.uuid4)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     rating = Column(Float, nullable=False)
     content = Column(String, nullable=False)
     reviewer_id = Column(Integer, nullable=False)

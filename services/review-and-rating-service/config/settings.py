@@ -1,15 +1,11 @@
-# config/settings.py
+from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+import os
 
-from pydantic import BaseSettings
-from typing import Optional
+load_dotenv()
 
 class Settings(BaseSettings):
-    DATABASE_URL: str
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./reviews.db")
     DEBUG: bool = False
-    TESTING: bool = False
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
 settings = Settings()

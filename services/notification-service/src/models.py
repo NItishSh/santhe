@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from .database import Base
 import uuid
-
-Base = declarative_base()
 
 class Notification(Base):
     __tablename__ = "notifications"

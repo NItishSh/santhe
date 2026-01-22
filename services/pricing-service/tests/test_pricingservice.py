@@ -1,49 +1,98 @@
 import pytest
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession
-from pricing_service.src.main import app, get_db
-from pricing_service.src.models import Price, Bid
-from pricing_service.src.database import engine
+from src.main import app, get_db
+from src.models import Price
 
-@pytest.fixture(scope="module")
-def client():
+# --- Fixtures ---
+
+@pytest.fixture
+def mock_db_session():
+    """Returns a mock implementation of the SQLAlchemy Session."""
+    session = MagicMock()
+    return session
+
+@pytest.fixture
+def client(mock_db_session):
+    """
+    Returns a TestClient with the `get_db` dependency overridden.
+    """
+    def override_get_db():
+        try:
+            yield mock_db_session
+        finally:
+            pass
+    
+    app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:
         yield c
+    # Clean up override
+    app.dependency_overrides = {}
 
-@pytest.fixture(scope="function")
-async def session():
-    async with engine.begin() as conn:
-        yield conn
+# --- Tests ---
 
-@pytest.fixture(scope="function")
-async def mock_get_db(session):
-    async def mock_db():
-        return session
-    return mock_db
+def test_create_price(client, mock_db_session):
+    def mock_refresh(instance):
+        instance.id = 1
+        # No timestamp to set here as it's passed in
+    mock_db_session.refresh.side_effect = mock_refresh
 
-def test_create_price(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
-    
-    response = client.post("/api/prices", json={
+    payload = {
         "product_id": 1,
         "price": 19.99,
         "timestamp": "2023-01-01T12:00:00"
-    })
+    }
+    
+    response = client.post("/api/prices", json=payload)
     
     assert response.status_code == 201
-    assert response.json()["price"] == 19.99
-
-def test_get_price(client, mock_get_db):
-    app.dependency_overrides[get_db] = mock_get_db
+    data = response.json()
+    assert data["product_id"] == 1
+    assert data["price"] == 19.99
     
-    # Mock price query
-    async def mock_get_price(price_id):
-        return Price(id=price_id, product_id=1, price=19.99, timestamp=datetime(2023, 1, 1))
-    
-    with patch('pricing_service.src.models.Price.query.filter_by', side_effect=lambda x: mock_get_price(x)):
-        response = client.get("/api/prices/1")
-        
-        assert response.status_code == 200
-        assert response.json()["price"] == 19.99
+    mock_db_session.add.assert_called()
+    mock_db_session.commit.assert_called()
 
-# Add similar tests for updating, deleting prices and managing bids
+def test_get_price(client, mock_db_session):
+    mock_price = Price(id=1, product_id=1, price=19.99, timestamp="2023-01-01T12:00:00")
+    
+    # Mocking query.filter.first
+    mock_db_session.query.return_value.filter.return_value.first.return_value = mock_price
+    
+    response = client.get("/api/prices/1")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price"] == 19.99
+
+def test_update_price(client, mock_db_session):
+    mock_price = Price(id=1, product_id=1, price=19.99, timestamp="2023-01-01T12:00:00")
+    
+    mock_db_session.query.return_value.filter.return_value.first.return_value = mock_price
+    
+    payload = {"price": 25.00}
+    response = client.patch("/api/prices/1", json=payload)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["price"] == 25.00
+    
+    assert mock_price.price == 25.00
+    mock_db_session.commit.assert_called()
+
+def test_get_price_history(client, mock_db_session):
+    mock_price = Price(id=1, product_id=1, price=19.99, timestamp="2023-01-01T12:00:00")
+    
+    # Mocking query.filter.filter.order_by.all
+    # This chain is long: query -> filter(product) -> [filter(date)] -> order_by -> all
+    
+    mock_query = mock_db_session.query.return_value
+    mock_query.filter.return_value = mock_query # For product_id and dates
+    mock_query.order_by.return_value.all.return_value = [mock_price]
+    
+    response = client.get("/api/prices/history/1")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["price"] == 19.99

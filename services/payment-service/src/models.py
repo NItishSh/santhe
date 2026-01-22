@@ -1,8 +1,7 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from .database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
@@ -16,8 +15,8 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Float)
-    status = Column(String)
-    created_at = Column(DateTime)
+    status = Column(String, default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User")
 
 class Refund(Base):
@@ -25,8 +24,8 @@ class Refund(Base):
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
     reason = Column(String)
-    status = Column(String)
-    created_at = Column(DateTime)
+    status = Column(String, default="pending")
+    created_at = Column(DateTime, default=datetime.utcnow)
     payment = relationship("Payment")
 
 class Dispute(Base):
@@ -34,6 +33,6 @@ class Dispute(Base):
     id = Column(Integer, primary_key=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"))
     description = Column(String)
-    status = Column(String)
-    created_at = Column(DateTime)
+    status = Column(String, default="open")
+    created_at = Column(DateTime, default=datetime.utcnow)
     payment = relationship("Payment")

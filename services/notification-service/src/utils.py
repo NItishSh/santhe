@@ -2,6 +2,7 @@ from twilio.rest import Client
 import sendgrid
 from sendgrid.helpers.mail import Mail
 from fastapi import HTTPException
+from config.settings import settings
 
 def send_sms(recipient_id, title, content):
     account_sid = settings.TWILIO_ACCOUNT_SID
