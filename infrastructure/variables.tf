@@ -46,3 +46,9 @@ variable "product" {
   type    = string
   default = "santhe"
 }
+
+variable "issuer_email" {
+  description = "Email address for ACME issuer"
+  type        = string
+  default     = "csnitish@gmail.com" # Fixed typo from gmial.com
+}
