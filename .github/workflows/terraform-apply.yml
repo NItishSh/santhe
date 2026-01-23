@@ -20,61 +20,19 @@ on:
 
 jobs:
   terraform-apply:
-    runs-on: ubuntu-latest
+    # Ensure only one deployment runs per environment at a time
+    concurrency: 
+      group: ${{ github.workflow }}-${{ github.event.inputs.ENVIRONMENT }}
+      cancel-in-progress: false
 
-    env:
-      AWS_REGION: ${{ github.event.inputs.AWS_REGION }}
-      ENVIRONMENT: ${{ github.event.inputs.ENVIRONMENT }}
-      VPC_CIDR: ${{ github.event.inputs.VPC_CIDR }}
-      ASSUME_ROLE_ARN: ${{ github.event.inputs.ASSUME_ROLE_ARN }}
-
-    defaults:
-      run:
-        working-directory: './infrastructure'
-    permissions:
-      pull-requests: write
-    steps:
-    - uses: actions/checkout@v3
-    - uses: hashicorp/setup-terraform@v2
-    - name: Terraform fmt
-      id: fmt
-      run: terraform fmt -check
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-region: ${{ env.AWS_REGION }}
-        role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-    - name: Terraform Init
-      id: init
-      run: terraform init
-    
-    - name: Terraform Validate
-      id: validate
-      run: terraform validate -no-color
-
-    - name: Terraform Plan
-      id: plan
-      run: |
-        terraform plan -no-color \
-          -var="region=${{ env.AWS_REGION }}" \
-          -var="environment=${{ env.ENVIRONMENT }}" \
-          -var="vpc_cidr=${{ env.VPC_CIDR }}" \
-          -var="assume_role_arn=${{ env.ASSUME_ROLE_ARN }}"
-
-    - name: Apply Terraform changes
-      if: ! github.event_name == 'pull_request'
-      run: |
-        terraform apply -auto-approve \
-          -var="region=${{ env.AWS_REGION }}" \
-          -var="environment=${{ env.ENVIRONMENT }}" \
-          -var="vpc_cidr=${{ env.VPC_CIDR }}" \
-          -var="assume_role_arn=${{ env.ASSUME_ROLE_ARN }}"
-
-    - name: Capture Terraform Output
-      if: ! github.event_name == 'pull_request'
-      working-directory: ./infrastructure
-      run: |
-        terraform output
+    uses: ./.github/workflows/terraform-logic.yml
+    with:
+      environment: ${{ github.event.inputs.ENVIRONMENT }}
+      region: ${{ github.event.inputs.AWS_REGION }}
+      command: 'apply'
+    secrets:
+      vpc_cidr: ${{ github.event.inputs.VPC_CIDR }}
+      assume_role_arn: ${{ github.event.inputs.ASSUME_ROLE_ARN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

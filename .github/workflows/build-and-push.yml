@@ -1,0 +1,80 @@
+name: Build and Push Microservices
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/**'
+
+permissions:
+  id-token: write # Required for configuring aws credentials
+  contents: read  # Required for checkout
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - user-service
+          - order-management-service
+          - product-catalog-service
+          - payment-service
+          - notification-service
+          - logistics-management-service
+          - analytics-and-reporting-service
+          - compliance-and-audit-service
+          - feedback-and-support-service
+          - pricing-service
+          - review-and-rating-service
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'services/${{ matrix.service }}/**'
+
+      - name: Calculate SemVer
+        if: steps.changes.outputs.src == 'true'
+        id: semver
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "${{ matrix.service }}-v"
+          major_pattern: "/BREAKING/"
+          minor_pattern: "/feat/"
+          version_format: "${major}.${minor}.${patch}"
+          change_path: "services/${{ matrix.service }}"
+
+      - name: Configure AWS credentials
+        if: steps.changes.outputs.src == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role # Update with actual role or secret
+
+      - name: Login to Amazon ECR
+        if: steps.changes.outputs.src == 'true'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registries: ${{ secrets.AWS_ACCOUNT_ID }}
+
+      - name: Build, tag, and push image to Amazon ECR
+        if: steps.changes.outputs.src == 'true'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ matrix.service }} # Assuming repo name matches service name (or handle naming convention)
+          IMAGE_TAG: ${{ steps.semver.outputs.version }}
+        working-directory: services/${{ matrix.service }}
+        run: |
+          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-${IMAGE_TAG}
+          docker tag $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-${IMAGE_TAG} $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-latest
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-latest

@@ -1,6 +1,6 @@
 locals {
   vpc_cidr = var.vpc_cidr
-  azs      = slice(data.aws_availability_zones.available.names, 0, 3)
+  azs      = slice(data.aws_availability_zones.available.names, 0, min(length(data.aws_availability_zones.available.names), 3))
 }
 
 data "aws_availability_zones" "available" {}
@@ -18,9 +18,10 @@ module "vpc" {
   intra_subnets    = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 52)]
   database_subnets = [for k, v in local.azs : cidrsubnet(local.vpc_cidr, 8, k + 56)]
 
-  enable_nat_gateway   = true
-  single_nat_gateway   = true
-  enable_dns_hostnames = true
+  enable_nat_gateway     = true
+  single_nat_gateway     = var.environment == "prd" ? false : true
+  one_nat_gateway_per_az = var.environment == "prd" ? true : false
+  enable_dns_hostnames   = true
 
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1

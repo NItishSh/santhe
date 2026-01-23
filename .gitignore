@@ -148,7 +148,9 @@ __pycache__
 *.yaml
 *.yml
 *.json
-
+!.github/workflows/*.yml
+!charts/microservice/*.yaml
+!charts/microservice/templates/*.yaml
 # Logs
 logs/
 *.log

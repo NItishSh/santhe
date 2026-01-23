@@ -2,10 +2,10 @@ module "eks" {
   source = "terraform-aws-modules/eks/aws"
   # version = "21.15.1"
 
-  cluster_name    = local.name
-  cluster_version = "1.30"
+  name               = local.name
+  kubernetes_version = "1.32"
 
-  cluster_endpoint_public_access = true
+  endpoint_public_access = true
 
   enable_cluster_creator_admin_permissions = true
 
@@ -15,10 +15,10 @@ module "eks" {
 
   eks_managed_node_groups = {
     default = {
-      instance_types = ["t3.medium", "t3.large"]
-      min_size       = 2
-      max_size       = 5
-      desired_size   = 2
+      instance_types = var.eks_instance_types
+      min_size       = var.eks_scaling_config.min_size
+      max_size       = var.eks_scaling_config.max_size
+      desired_size   = var.eks_scaling_config.desired_size
     }
   }
 
@@ -40,11 +40,12 @@ module "eks_blueprints_addons" {
   oidc_provider_arn = module.eks.oidc_provider_arn
 
   # Add-ons
-  enable_metrics_server     = true
-  enable_cluster_autoscaler = true
-  enable_external_dns       = true
-  enable_cert_manager       = true
-  enable_ingress_nginx      = true
+  enable_metrics_server             = true
+  enable_cluster_autoscaler         = true
+  enable_external_dns               = true
+  enable_cert_manager               = true
+  enable_ingress_nginx              = false
+  enable_aws_gateway_api_controller = true
 
   # Kube Prometheus Stack (Monitoring)
   enable_kube_prometheus_stack = true

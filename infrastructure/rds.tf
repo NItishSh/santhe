@@ -6,11 +6,11 @@ locals {
       engine_version        = "14"
       family                = "postgres14"
       major_engine_version  = "14"
-      instance_class        = "db.t4g.large"
-      allocated_storage     = 20
+      instance_class        = var.db_instance_class
+      allocated_storage     = var.db_allocated_storage
       max_allocated_storage = 100
-      db_name               = "santhe"
-      username              = "santhe_admin"
+      db_name               = var.db_name
+      username              = var.db_username
     }
   )
 }
@@ -41,8 +41,8 @@ module "db" {
   maintenance_window      = "Mon:00:00-Mon:03:00"
   backup_window           = "03:00-06:00"
   backup_retention_period = 7
-  skip_final_snapshot     = true
-  deletion_protection     = false
+  skip_final_snapshot     = var.environment == "prd" ? false : true
+  deletion_protection     = var.environment == "prd" ? true : false
 
   subnet_ids = module.vpc.database_subnets
 

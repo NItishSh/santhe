@@ -1,0 +1,165 @@
+name: Terraform Logic
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+        description: 'e.g. sbx, prd'
+      region:
+        required: true
+        type: string
+        description: 'e.g. ap-south-1'
+      command:
+        required: true
+        type: string
+        description: 'plan or apply'
+        default: 'plan'
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GITHUB_TOKEN:
+        required: false
+      vpc_cidr:
+        required: true
+      assume_role_arn:
+        required: true
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: './infrastructure'
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: hashicorp/setup-terraform@v2
+      
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ inputs.region }}
+          role-to-assume: ${{ secrets.assume_role_arn }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Select or Create Workspace
+        id: workspace
+        run: |
+          WORKSPACE="${{ inputs.environment }}-${{ inputs.region }}"
+          echo "Selecting or creating workspace: $WORKSPACE"
+          
+          if terraform workspace list | grep -q "^[[:space:]]*${WORKSPACE}$"; then
+            echo "Workspace exists. Selecting..."
+            terraform workspace select "$WORKSPACE"
+          else
+            echo "Workspace does not exist. Creating..."
+            terraform workspace new "$WORKSPACE"
+          fi
+          echo "curr_workspace=$WORKSPACE" >> $GITHUB_OUTPUT
+
+      - name: Determine Var Strategy
+        id: vars
+        run: |
+          WORKSPACE="${{ steps.workspace.outputs.curr_workspace }}"
+          TFVARS_FILE="${WORKSPACE}.tfvars"
+          
+          if [ -f "$TFVARS_FILE" ]; then
+            echo "Found tfvars file: $TFVARS_FILE"
+            echo "args=-var-file=${TFVARS_FILE}" >> $GITHUB_OUTPUT
+          else
+            echo "No tfvars file found for $WORKSPACE. Using inputs."
+            echo "args=-var='region=${{ inputs.region }}' -var='environment=${{ inputs.environment }}' -var='vpc_cidr=${{ secrets.vpc_cidr }}' -var='assume_role_arn=${{ secrets.assume_role_arn }}'" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        # Run plan if command is plan OR apply (apply needs a plan first usually, but here we can just do apply if that's the command, 
+        # however, standard practice often runs plan first. 
+        # Simpler approach: If 'plan', run plan. If 'apply', run apply directly (or plan then apply).
+        # Existing logic just ran 'terraform plan' or 'terraform apply'.
+        # I will match existing behavior: Run plan always for visibility, or just respecting the command.
+        # Actually, let's strictly follow the 'command' input.
+        if: inputs.command == 'plan'
+        run: |
+          terraform plan -no-color ${{ steps.vars.outputs.args }}
+        continue-on-error: true
+
+      - name: Terraform Apply
+        if: inputs.command == 'apply'
+        run: |
+          terraform apply -auto-approve ${{ steps.vars.outputs.args }}
+
+      # PR Comment logic only if it's a pull request AND command was plan
+      - uses: actions/github-script@v6
+        if: github.event_name == 'pull_request' && inputs.command == 'plan'
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Terraform Format and Style');
+            });
+
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            <details><summary>Validation Output</summary>
+
+            \`\`\`\n
+            ${{ steps.validate.outputs.stdout }}
+            \`\`\`
+
+            </details>
+
+            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan</summary>
+
+            \`\`\`\n
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`./infrastructure\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              });
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              });
+            }

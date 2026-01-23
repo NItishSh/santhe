@@ -1,10 +1,10 @@
 module "bastion" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 5.0"
+  source = "terraform-aws-modules/ec2-instance/aws"
+  # version = "~> 5.0"
 
   name = "${local.name}-bastion"
 
-  instance_type          = "t3.micro"
+  instance_type          = var.bastion_instance_type
   vpc_security_group_ids = [module.bastion_sg.security_group_id]
   subnet_id              = module.vpc.public_subnets[0]
 
@@ -18,8 +18,8 @@ module "bastion" {
 }
 
 module "bastion_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
+  source = "terraform-aws-modules/security-group/aws"
+  # version = "~> 5.0"
 
   name        = "${local.name}-bastion-sg"
   description = "Bastion security group"
