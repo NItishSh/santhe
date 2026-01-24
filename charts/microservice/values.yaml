@@ -45,3 +45,44 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+env: []
+#  - name: ENV_VAR_NAME
+#    value: "value"
+
+envFrom: []
+#  - configMapRef:
+#      name: config-map-name
+
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+istio:
+  enabled: false
+  virtualService:
+    enabled: false
+    gateways: []
+    hosts: []
+    # Weighted routing for canary
+    routes: [] 
+    # Example route:
+    # - destination:
+    #     host: user-service
+    #     subset: stable
+    #   weight: 100
+  destinationRule:
+    enabled: false
+    # Define subsets here
+    subsets: []
+    # Example subset:
+    # - name: stable
+    #   labels:
+    #     version: v1
