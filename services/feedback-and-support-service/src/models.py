@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
@@ -21,3 +22,21 @@ class FeedbackTicket(Base):
             "status": self.status,
             "timestamp": self.timestamp
         }
+
+class Topic(Base):
+    __tablename__ = "topics"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    articles = relationship("Article", back_populates="topic")
+
+class Article(Base):
+    __tablename__ = "articles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    topic_id = Column(Integer, ForeignKey("topics.id"))
+    title = Column(String)
+    content = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    topic = relationship("Topic", back_populates="articles")

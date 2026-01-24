@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from .database import get_db, engine, Base
 from .models import User, Payment, Refund, Dispute
 
@@ -25,28 +26,30 @@ class DisputeRequest(BaseModel):
 class PaymentResponse(PaymentRequest):
     id: int
     status: str
+    created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
-@app.post("/api/payments", response_model=PaymentResponse)
+class RefundResponse(BaseModel):
+    id: int
+    payment_id: int
+    reason: str
+    status: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class DisputeResponse(BaseModel):
+    id: int
+    payment_id: int
+    description: str
+    status: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+@app.post("/api/payments", response_model=PaymentResponse, status_code=status.HTTP_201_CREATED)
 def create_payment(payment: PaymentRequest, db: Session = Depends(get_db)):
-    # Simple check if user exists, otherwise create for testing purposes since we don't have a shared user DB across services easily mockable here without more context
+    # Check for user existence logic
     user = db.query(User).filter(User.id == payment.user_id).first()
     if not user:
-        # Create a dummy user for the sake of the transaction if strict constraint is needed, 
-        # or assuming the test will seed it.
-        # For this refactor, let's allow creating a dummy user if not found to ensure flow works?
-        # Or better, strict check:
-        # raise HTTPException(status_code=404, detail="User not found")
-        # Given tests might expect simple flow, let's keep strict check but ensure tests seed data.
-        pass
-
-    # However, to make tests easier without full environment, let's arguably optionally create user if passing 'test' flag? 
-    # Actually, standard practice: expect user to exist.
-    # But wait, User model is defined IN THIS SERVICE. So we should probably expose an endpoint to create users or seed them.
-    # For now, let's just proceed.
-    
-    # Check if user exists in LOCAL db (since User model is here)
-    if user is None:
          # Auto-create for simplicity in this microservice demo if not found
          user = User(id=payment.user_id, name="Test User", email=f"test{payment.user_id}@example.com")
          db.add(user)
@@ -65,7 +68,7 @@ def get_payment(payment_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Payment not found")
     return payment
 
-@app.patch("/api/payments/{payment_id}")
+@app.patch("/api/payments/{payment_id}", response_model=PaymentResponse)
 def update_payment_status(payment_id: int, status: str, db: Session = Depends(get_db)):
     payment = db.query(Payment).filter(Payment.id == payment_id).first()
     if not payment:
@@ -73,14 +76,15 @@ def update_payment_status(payment_id: int, status: str, db: Session = Depends(ge
     
     payment.status = status
     db.commit()
-    return {"status": "updated"}
+    db.refresh(payment)
+    return payment
 
 @app.get("/api/payments/history/{user_id}", response_model=List[PaymentResponse])
 def get_payment_history(user_id: int, db: Session = Depends(get_db)):
     payments = db.query(Payment).filter(Payment.user_id == user_id).all()
     return payments
 
-@app.post("/api/refunds")
+@app.post("/api/refunds", response_model=RefundResponse, status_code=status.HTTP_201_CREATED)
 def create_refund(refund: RefundRequest, db: Session = Depends(get_db)):
     payment = db.query(Payment).filter(Payment.id == refund.payment_id).first()
     if not payment:
@@ -90,16 +94,16 @@ def create_refund(refund: RefundRequest, db: Session = Depends(get_db)):
     db.add(new_refund)
     db.commit()
     db.refresh(new_refund)
-    return {"refund_id": new_refund.id}
+    return new_refund
 
-@app.get("/api/refunds/{refund_id}")
+@app.get("/api/refunds/{refund_id}", response_model=RefundResponse)
 def get_refund(refund_id: int, db: Session = Depends(get_db)):
     refund = db.query(Refund).filter(Refund.id == refund_id).first()
     if not refund:
         raise HTTPException(status_code=404, detail="Refund not found")
     return refund
 
-@app.post("/api/disputes")
+@app.post("/api/disputes", response_model=DisputeResponse, status_code=status.HTTP_201_CREATED)
 def create_dispute(dispute: DisputeRequest, db: Session = Depends(get_db)):
     payment = db.query(Payment).filter(Payment.id == dispute.payment_id).first()
     if not payment:
@@ -109,11 +113,15 @@ def create_dispute(dispute: DisputeRequest, db: Session = Depends(get_db)):
     db.add(new_dispute)
     db.commit()
     db.refresh(new_dispute)
-    return {"dispute_id": new_dispute.id}
+    return new_dispute
 
-@app.get("/api/disputes/{dispute_id}")
+@app.get("/api/disputes/{dispute_id}", response_model=DisputeResponse)
 def get_dispute(dispute_id: int, db: Session = Depends(get_db)):
     dispute = db.query(Dispute).filter(Dispute.id == dispute_id).first()
     if not dispute:
         raise HTTPException(status_code=404, detail="Dispute not found")
     return dispute
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to the Payment Service"}

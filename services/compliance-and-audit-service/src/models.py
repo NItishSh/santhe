@@ -22,3 +22,22 @@ class AuditLog(Base):
             "details": json.loads(self.details) if self.details else None,
             "timestamp": self.timestamp
         }
+
+class ComplianceCheck(Base):
+    __tablename__ = "compliance_checks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    check_type = Column(String)
+    status = Column(String) # pass, fail
+    details = Column(Text, nullable=True) # JSON
+    performed_at = Column(DateTime, default=datetime.utcnow)
+
+class RiskAssessment(Base):
+    __tablename__ = "risk_assessments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assessment_type = Column(String)
+    risk_score = Column(Integer) # 0-100
+    risk_level = Column(String) # Low, Medium, High
+    details = Column(Text, nullable=True)
+    performed_at = Column(DateTime, default=datetime.utcnow)

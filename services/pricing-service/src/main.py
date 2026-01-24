@@ -29,6 +29,14 @@ class BidCreate(BaseModel):
     bid_amount: float
     bidder_id: int
 
+class BidUpdate(BaseModel):
+    bid_amount: float
+
+class BidResponse(BidCreate):
+    id: int
+    timestamp: datetime
+    model_config = ConfigDict(from_attributes=True)
+
 @app.post("/api/prices", status_code=status.HTTP_201_CREATED, response_model=PriceResponse)
 def create_price(price: PriceCreate, db: Session = Depends(get_db)):
     # timestamp is already a datetime object thanks to Pydantic
@@ -83,6 +91,45 @@ def get_price_history(product_id: int, start_date: Optional[datetime] = None, en
         query = query.filter(Price.timestamp <= end_date)
     
     return query.order_by(Price.timestamp.asc()).all()
+
+@app.post("/api/bids", status_code=status.HTTP_201_CREATED, response_model=BidResponse)
+async def create_bid(bid: BidCreate, db: Session = Depends(get_db)):
+    new_bid = Bid(
+        product_id=bid.product_id,
+        bid_amount=bid.bid_amount,
+        bidder_id=bid.bidder_id,
+        timestamp=datetime.utcnow()
+    )
+    db.add(new_bid)
+    db.commit()
+    db.refresh(new_bid)
+    return new_bid
+
+@app.get("/api/bids/{bid_id}", response_model=BidResponse)
+async def get_bid(bid_id: int, db: Session = Depends(get_db)):
+    bid = db.query(Bid).filter(Bid.id == bid_id).first()
+    if not bid:
+        raise HTTPException(status_code=404, detail="Bid not found")
+    return bid
+
+@app.patch("/api/bids/{bid_id}", response_model=BidResponse)
+async def update_bid(bid_id: int, bid_update: BidUpdate, db: Session = Depends(get_db)):
+    bid = db.query(Bid).filter(Bid.id == bid_id).first()
+    if not bid:
+        raise HTTPException(status_code=404, detail="Bid not found")
+    bid.bid_amount = bid_update.bid_amount
+    db.commit()
+    db.refresh(bid)
+    return bid
+
+@app.delete("/api/bids/{bid_id}")
+async def cancel_bid(bid_id: int, db: Session = Depends(get_db)):
+    bid = db.query(Bid).filter(Bid.id == bid_id).first()
+    if not bid:
+        raise HTTPException(status_code=404, detail="Bid not found")
+    db.delete(bid)
+    db.commit()
+    return {"message": "Bid cancelled successfully"}
 
 @app.get("/")
 def root():

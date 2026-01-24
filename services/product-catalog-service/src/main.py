@@ -1,12 +1,25 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from .database import get_db
+from pydantic import BaseModel, ConfigDict
+from .database import get_db, engine, Base
 from .models import Product, Category
 from fastapi.middleware.cors import CORSMiddleware
 
+# Create tables
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
+
+class CategoryCreate(BaseModel):
+    name: str
+
+class CategoryUpdate(BaseModel):
+    name: str
+
+class CategoryResponse(CategoryCreate):
+    id: int
+    model_config = ConfigDict(from_attributes=True)
 
 class ProductCreate(BaseModel):
     name: str
@@ -23,8 +36,41 @@ class ProductUpdate(BaseModel):
 class ProductResponse(ProductCreate):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+@app.post("/api/categories", status_code=status.HTTP_201_CREATED, response_model=CategoryResponse)
+async def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
+    existing_category = db.query(Category).filter_by(name=category.name).first()
+    if existing_category:
+        raise HTTPException(status_code=400, detail="Category already exists")
+    new_category = Category(name=category.name)
+    db.add(new_category)
+    db.commit()
+    db.refresh(new_category)
+    return new_category
+
+@app.get("/api/categories", response_model=List[CategoryResponse])
+async def list_categories(db: Session = Depends(get_db)):
+    return db.query(Category).all()
+
+@app.patch("/api/categories/{category_id}", response_model=CategoryResponse)
+async def update_category(category_id: int, category: CategoryUpdate, db: Session = Depends(get_db)):
+    db_category = db.query(Category).filter(Category.id == category_id).first()
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    db_category.name = category.name
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+@app.delete("/api/categories/{category_id}")
+async def delete_category(category_id: int, db: Session = Depends(get_db)):
+    db_category = db.query(Category).filter(Category.id == category_id).first()
+    if not db_category:
+        raise HTTPException(status_code=404, detail="Category not found")
+    db.delete(db_category)
+    db.commit()
+    return {"message": "Category deleted successfully"}
 
 @app.post("/api/products", status_code=status.HTTP_201_CREATED, response_model=ProductResponse)
 async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
