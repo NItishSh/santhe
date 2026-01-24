@@ -2,6 +2,8 @@ module "ecr" {
   source  = "terraform-aws-modules/ecr/aws"
   version = "~> 1.6"
 
+  count = local.ecr_enabled
+
   repository_name = "${local.name}-repo"
 
   repository_lifecycle_policy = jsonencode({

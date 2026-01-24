@@ -10,7 +10,7 @@ resource "helm_release" "microservice" {
   values = [
     yamlencode({
       image = {
-        repository = "${module.ecr.repository_url}"
+        repository = local.ecr_enabled == 1 ? module.ecr[0].repository_url : var.ecr_repository_url
         # Tag format: <service-name>-<tag> (e.g., user-service-sha-123)
         # Default tag is 'latest' -> user-service-latest
         tag = "${each.key}-${lookup(var.microservice_image_tags, each.key, "latest")}"

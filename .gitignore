@@ -151,6 +151,7 @@ __pycache__
 !.github/workflows/*.yml
 !charts/microservice/*.yaml
 !charts/microservice/templates/*.yaml
+!infrastructure/config/*.versions.json
 # Logs
 logs/
 *.log

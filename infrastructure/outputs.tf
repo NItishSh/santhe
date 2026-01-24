@@ -25,5 +25,5 @@ output "bastion_public_ip" {
 
 output "ecr_repository_url" {
   description = "ECR Repository URL"
-  value       = module.ecr.repository_url
+  value       = local.ecr_enabled == 1 ? module.ecr[0].repository_url : var.ecr_repository_url
 }

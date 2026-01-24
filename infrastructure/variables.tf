@@ -114,3 +114,9 @@ variable "microservice_image_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "ecr_repository_url" {
+  description = "URL of the ECR repository (if using a shared/existing one)"
+  type        = string
+  default     = ""
+}

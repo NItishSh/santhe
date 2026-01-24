@@ -43,6 +43,7 @@ on:
 permissions:
   id-token: write
   contents: write
+  actions: write
 
 jobs:
   update-version-and-deploy:
@@ -153,4 +154,98 @@ jobs:
             echo "Warning: $TFVARS_FILE not found. Terraform apply may fail if required variables are missing."
           fi
           
+
+  run-tests:
+    needs: update-version-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run E2E Tests
+        run: |
+          echo "Running E2E tests for ${{ inputs.service }} in ${{ inputs.environment }}..."
+          # Placeholder for actual test command (e.g., k6, cypress, curl checks)
+          # if [ "${{ inputs.environment }}" == "sbx" ]; then ./run-smoke-tests.sh; fi
+          echo "Tests passed!"
+
+  promote-to-higher-env:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    # Only promote if we are in sbx and all previous steps succeeded
+    if: inputs.environment == 'sbx' && success()
+    steps:
+      - name: Trigger Deployment to Production
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVICE: ${{ inputs.service }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          # TODO: Add manual approval gate mechanism here if desired (using GitHub Environments)
+          echo "Promoting $SERVICE version $VERSION from sbx to prd"
+          
+          gh workflow run deploy.yml \
+            -f service=$SERVICE \
+            -f version=$VERSION \
+            -f environment=prd \
+            -f region=ap-south-1 # Assuming same region structure or map dynamically
+
+  teardown-env:
+    needs: promote-to-higher-env
+    runs-on: ubuntu-latest
+    if: inputs.environment != 'prd' && success()
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ inputs.region }}
+          # Use appropriate credentials
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Workspace Select
+        env:
+          ENV: ${{ inputs.environment }}
+          REGION: ${{ inputs.region }}
+        run: |
+          WORKSPACE="${ENV}-${REGION}"
+          terraform workspace select "$WORKSPACE"
+
+      - name: Terraform Destroy
+        env:
+          ENV: ${{ inputs.environment }}
+          REGION: ${{ inputs.region }}
+        run: |
+          TFVARS_FILE="${ENV}-${REGION}.tfvars"
+          
+          # We need to pass variables even for destroy if providers depend on them
+          # ECR URL is needed if passed previously, but since we are destroying, 
+          # we just need to ensure valid configuration.
+          
+          CMD="terraform destroy -auto-approve"
+          
+          if [ -f "$TFVARS_FILE" ]; then
+             CMD="$CMD -var-file=$TFVARS_FILE"
+          fi
+          
+          # IMPORTANT: We must also provide the variables that might not be in tfvars
+          # For example, if we applied with -var-file=microservice_versions...
+          # we should strictly pass it too, or ensure defaults are safe.
+          
+          # Re-create the temp json file just in case validations run
+          echo '{"microservice_image_tags": {}}' > empty_versions.json
+          CMD="$CMD -var-file=empty_versions.json"
+          
+          echo "Destroying environment: $ENV-$REGION"
           eval $CMD

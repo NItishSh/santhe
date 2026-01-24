@@ -10,6 +10,7 @@ on:
 permissions:
   id-token: write # Required for configuring aws credentials
   contents: read  # Required for checkout
+  actions: write  # Required for triggering other workflows
 
 jobs:
   build-and-push:
@@ -78,3 +79,16 @@ jobs:
           docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-${IMAGE_TAG}
           docker tag $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-${IMAGE_TAG} $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-latest
           docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:${{ matrix.service }}-latest
+
+      - name: Trigger Deployment to Sandbox
+        if: steps.changes.outputs.src == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVICE: ${{ matrix.service }}
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          gh workflow run deploy.yml \
+            -f service=$SERVICE \
+            -f version=$VERSION \
+            -f environment=sbx \
+            -f region=ap-south-1

@@ -1,0 +1,13 @@
+{
+  "user-service": "latest",
+  "order-management-service": "latest",
+  "product-catalog-service": "latest",
+  "payment-service": "latest",
+  "notification-service": "latest",
+  "logistics-management-service": "latest",
+  "analytics-and-reporting-service": "latest",
+  "compliance-and-audit-service": "latest",
+  "feedback-and-support-service": "latest",
+  "pricing-service": "latest",
+  "review-and-rating-service": "latest"
+}
