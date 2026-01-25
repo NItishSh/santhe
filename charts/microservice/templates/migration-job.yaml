@@ -1,0 +1,34 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "microservice.fullname" . }}-migration-{{ .Release.Revision }}"
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-weight": "5"
+spec:
+  template:
+    metadata:
+      name: "{{ include "microservice.fullname" . }}-migration"
+      labels:
+        {{- include "microservice.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      containers:
+      - name: db-migration
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args: ["alembic upgrade head"]
+        env:
+          {{- toYaml .Values.env | nindent 10 }}
+        {{- if .Values.envFrom }}
+        envFrom:
+          {{- toYaml .Values.envFrom | nindent 10 }}
+        {{- end }}
+{{- end }}

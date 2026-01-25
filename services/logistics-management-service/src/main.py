@@ -7,7 +7,7 @@ from .database import get_db, engine, Base
 from .models import Delivery, Shipping
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

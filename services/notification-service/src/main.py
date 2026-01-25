@@ -8,7 +8,7 @@ import uuid
 from .utils import send_sms, send_email, send_in_app_notification
 
 # Create tables if not exist (simplification for now, usually Alembic)
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

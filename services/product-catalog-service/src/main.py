@@ -7,7 +7,7 @@ from .models import Product, Category
 from fastapi.middleware.cors import CORSMiddleware
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

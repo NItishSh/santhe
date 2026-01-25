@@ -53,6 +53,7 @@ helm upgrade --install $SERVICE_NAME charts/microservice \
     --set env[0].name=DATABASE_URL \
     --set env[0].value="$DATABASE_URL" \
     --set env[1].name=SECRET_KEY \
-    --set env[1].value="supersecret"
+    --set env[1].value="supersecret" \
+    --set migrations.enabled=true
 
 echo "✅ $SERVICE_NAME deployed successfully!"

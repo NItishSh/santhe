@@ -65,6 +65,9 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
+migrations:
+  enabled: false
+
 istio:
   enabled: false
   virtualService:

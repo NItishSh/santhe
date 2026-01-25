@@ -9,7 +9,7 @@ from .models import AnalyticsEvent, AnalyticsJob, Report, Dashboard
 import json
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

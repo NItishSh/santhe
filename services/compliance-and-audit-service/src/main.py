@@ -8,7 +8,7 @@ from .models import AuditLog, ComplianceCheck, RiskAssessment
 import json
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

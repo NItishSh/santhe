@@ -156,3 +156,7 @@ for service_dir in services/*; do
 done
 
 echo "🎉 Deployment Complete! Access web at http://localhost"
+
+# Expose Web UI
+echo "🌍 Starting Port Forward (Web UI -> localhost:8080)..."
+kubectl port-forward svc/web 8080:3000 -n santhe > /dev/null 2>&1 &

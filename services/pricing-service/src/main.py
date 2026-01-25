@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional, List
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

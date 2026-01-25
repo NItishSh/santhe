@@ -7,7 +7,7 @@ from .models import Review
 import uuid
 
 # Create tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
