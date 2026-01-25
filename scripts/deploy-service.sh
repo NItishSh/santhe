@@ -2,10 +2,11 @@
 set -e
 
 SERVICE_NAME=$1
+VERSION=${2:-latest}
 CLUSTER_NAME="santhe-local"
 
 if [ -z "$SERVICE_NAME" ]; then
-    echo "Usage: ./scripts/deploy-service.sh <service-name>"
+    echo "Usage: ./scripts/deploy-service.sh <service-name> [version]"
     exit 1
 fi
 
@@ -16,22 +17,22 @@ if [ ! -d "$SERVICE_DIR" ]; then
     exit 1
 fi
 
-echo "🚀 Deploying $SERVICE_NAME..."
+echo "🚀 Deploying $SERVICE_NAME:$VERSION..."
 
 # Build
 echo "🏗 Building Docker image..."
-docker build -t santhe/$SERVICE_NAME:latest $SERVICE_DIR
+docker build -t santhe/$SERVICE_NAME:$VERSION $SERVICE_DIR
 
 # Load
 echo "📦 Loading image into Kind..."
-kind load docker-image santhe/$SERVICE_NAME:latest --name $CLUSTER_NAME
+kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
 
 # Deploy
 echo "☸️ Deploying to Kubernetes..."
 helm upgrade --install $SERVICE_NAME charts/microservice \
     --namespace santhe \
     --set image.repository="santhe/$SERVICE_NAME" \
-    --set image.tag="latest" \
+    --set image.tag="$VERSION" \
     --set image.pullPolicy="IfNotPresent" \
     --set nameOverride="$SERVICE_NAME" \
     --set fullnameOverride="$SERVICE_NAME" \
