@@ -29,6 +29,14 @@ kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
 
 # Deploy
 echo "☸️ Deploying to Kubernetes..."
+
+# DB Connection String
+# DB Host: postgres.santhe.svc.cluster.local (Standard K8s DNS)
+DB_NAME="${SERVICE_NAME//-/_}_db"
+DATABASE_URL="postgresql://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
+
+echo "   - Configured DB: $DATABASE_URL"
+
 helm upgrade --install $SERVICE_NAME charts/microservice \
     --namespace santhe \
     --set image.repository="santhe/$SERVICE_NAME" \
@@ -41,6 +49,10 @@ helm upgrade --install $SERVICE_NAME charts/microservice \
         --set istio.virtualService.enabled=true \
         --set istio.virtualService.hosts[0]="$SERVICE_NAME.local" \
         --set istio.virtualService.routes[0].destination.host="$SERVICE_NAME" \
-        --set istio.virtualService.routes[0].destination.port.number=8000
+        --set istio.virtualService.routes[0].destination.port.number=8000 \
+    --set env[0].name=DATABASE_URL \
+    --set env[0].value="$DATABASE_URL" \
+    --set env[1].name=SECRET_KEY \
+    --set env[1].value="supersecret"
 
 echo "✅ $SERVICE_NAME deployed successfully!"

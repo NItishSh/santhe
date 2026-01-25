@@ -8,3 +8,6 @@ pytest>=8.0.0
 twilio
 sendgrid
 pika
+psycopg2-binary>=2.9.9
+alembic>=1.13.0
+

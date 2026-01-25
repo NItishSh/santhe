@@ -1,0 +1,79 @@
+name: Build and Push Web (Frontend)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+
+permissions:
+  id-token: write
+  contents: read
+  actions: write
+
+jobs:
+  build-and-push-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'web/**'
+
+      - name: Calculate SemVer
+        if: steps.changes.outputs.src == 'true'
+        id: semver
+        uses: paulhatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "web-v"
+          major_pattern: "/BREAKING/"
+          minor_pattern: "/feat/"
+          version_format: "${major}.${minor}.${patch}"
+          change_path: "web"
+
+      - name: Configure AWS credentials
+        if: steps.changes.outputs.src == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ap-south-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/github-actions-role
+
+      - name: Login to Amazon ECR
+        if: steps.changes.outputs.src == 'true'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registries: ${{ secrets.AWS_ACCOUNT_ID }}
+
+      - name: Build, tag, and push image to Amazon ECR
+        if: steps.changes.outputs.src == 'true'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: web # Assuming repository name is 'web' or 'santhe-web'
+          IMAGE_TAG: ${{ steps.semver.outputs.version }}
+        working-directory: web
+        run: |
+          docker build -t $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:web-${IMAGE_TAG} .
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:web-${IMAGE_TAG}
+          docker tag $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:web-${IMAGE_TAG} $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:web-latest
+          docker push $ECR_REGISTRY/${{ secrets.ECR_REPO_NAME }}:web-latest
+
+      - name: Trigger Deployment to Sandbox
+        if: steps.changes.outputs.src == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVICE: web
+          VERSION: ${{ steps.semver.outputs.version }}
+        run: |
+          gh workflow run deploy.yml \
+            -f service=$SERVICE \
+            -f version=$VERSION \
+            -f environment=sbx \
+            -f region=ap-south-1

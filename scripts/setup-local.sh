@@ -77,9 +77,43 @@ fi
 echo "✅ Cluster and Istio Setup Complete!"
 
 
+# 8. Install PostgreSQL (Shared Instance)
+echo "🐘 Installing PostgreSQL..."
+if ! helm status postgres -n santhe >/dev/null 2>&1; then
+    helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
+    helm repo update
+    
+    # Install Postgres with a fixed password for local dev ease
+    helm upgrade --install postgres bitnami/postgresql \
+        --namespace santhe \
+        --create-namespace \
+        --set auth.postgresPassword=postgres \
+        --set primary.persistence.enabled=false \
+        --wait
+else
+    echo "✅ PostgreSQL already installed."
+fi
+
+# 9. Create Databases for Microservices
+echo "🗄 Preparing Databases..."
+PROVISION_SQL=""
+for service_dir in services/*; do
+    if [ -d "$service_dir" ]; then
+        SERVICE_NAME=$(basename "$service_dir")
+        DB_NAME="${SERVICE_NAME//-/_}_db"
+        # Just try to create the DB. If it exists, it errors but continues (default psql behavior without ON_ERROR_STOP)
+        PROVISION_SQL="${PROVISION_SQL}CREATE DATABASE $DB_NAME;"
+    fi
+done
+
+# Execute DB creation
+# We use echo to pipe the SQL into the psql command running inside the pod
+echo "$PROVISION_SQL" | kubectl run postgres-init --image=postgres:alpine --restart=Never --rm -i -- \
+    psql postgresql://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/postgres \
+    || echo "⚠️  Database provisioning had errors (likely 'already exists'), checking readiness..."
+
 # 6. Build and Deploy All Services
 echo "🏗 Building and Deploying Services..."
-
 # 6a. Deploy Web App
 echo "➡️ Processing web (Frontend)..."
 docker build -t santhe/web:latest ./web
@@ -87,37 +121,37 @@ kind load docker-image santhe/web:latest --name $CLUSTER_NAME
 helm upgrade --install web charts/microservice -f infrastructure/manifests/web-values.yaml --create-namespace --namespace santhe
 
 # 6b. Deploy Backend Microservices
+# 6b. Deploy Backend Microservices
+# Load version configuration
+# We grep the file manually below, so no need to source it (which fails on hyphens)
+
+
 for service_dir in services/*; do
     if [ -d "$service_dir" ]; then
         SERVICE_NAME=$(basename "$service_dir")
-        IMAGE_NAME="santhe/$SERVICE_NAME:latest"
         
-        echo "➡️ Processing $SERVICE_NAME..."
+        # Get version from env var (converting hyphen to underscore for variable name if needed, 
+        # but simpler to just expect matching names or default to latest)
+        # Bash variable indirection to get value of verify variable named $SERVICE_NAME
+        VERSION_VAR=${SERVICE_NAME//-/_} # user-service -> user_service (standard env var naming)
+        # Actually, let's just stick to reading the file or defaulting.
+        # Direct lookup might be cleaner.
         
-        # Build
-        docker build -t $IMAGE_NAME $service_dir
+        # Let's use a simpler approach: Read specific line or default
+        # But we already sourced it. 
+        # The issue is variable names with hyphens are not standard in shell assignment (though bash allows them in some contexts, export usually doesn't).
+        # Let's assume versions.env uses standard keys or we grep it.
         
-        # Load into Kind
-        kind load docker-image $IMAGE_NAME --name $CLUSTER_NAME
+        # Robust way: grep the file
+        SERVICE_VERSION=$(grep "^$SERVICE_NAME=" versions.env | cut -d'=' -f2)
         
-        # Deploy with Helm
-        # We assume basic configuration for now. Each service ideally has its own values.yaml,
-        # but for now we'll use the default chart values or generate a minimal set if needed.
-        # The default chart pulls 'nginx' by default, so we MUST override the image.
+        if [ -z "$SERVICE_VERSION" ]; then
+            SERVICE_VERSION="latest"
+        fi
+
+        echo "➡️ Processing $SERVICE_NAME (Version: $SERVICE_VERSION)..."
         
-        helm upgrade --install $SERVICE_NAME charts/microservice \
-            --namespace santhe \
-            --set image.repository="santhe/$SERVICE_NAME" \
-            --set image.tag="latest" \
-            --set image.pullPolicy="IfNotPresent" \
-            --set nameOverride="$SERVICE_NAME" \
-            --set fullnameOverride="$SERVICE_NAME" \
-            --set service.port=8000 \
-            --set istio.enabled=true \
-             --set istio.virtualService.enabled=true \
-             --set istio.virtualService.hosts[0]="$SERVICE_NAME.local" \
-             --set istio.virtualService.routes[0].destination.host="$SERVICE_NAME" \
-             --set istio.virtualService.routes[0].destination.port.number=8000
+        ./scripts/deploy-service.sh "$SERVICE_NAME" "$SERVICE_VERSION"
     fi
 done
 
