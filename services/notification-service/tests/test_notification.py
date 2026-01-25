@@ -73,25 +73,28 @@ def test_create_notification_failure_handler(client, mock_db_session):
         assert added_notification.status == "failed"
 
 def test_get_notification(client, mock_db_session):
-    mock_notif = Notification(id="uuid-1", title="Info", content="msg", recipient_id=1, notification_type="email", status="sent")
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_notif = Notification(id=valid_uuid, title="Info", content="msg", recipient_id=1, notification_type="email", status="sent")
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_notif
     
-    response = client.get("/api/notifications/uuid-1")
+    response = client.get(f"/api/notifications/{valid_uuid}")
     
     assert response.status_code == 200
     assert response.json()["title"] == "Info"
 
 def test_update_notification_status(client, mock_db_session):
-    mock_notif = Notification(id="uuid-1", status="sent")
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_notif = Notification(id=valid_uuid, status="sent")
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_notif
     
-    response = client.patch("/api/notifications/uuid-1?status=read")
+    response = client.patch(f"/api/notifications/{valid_uuid}?status=read")
     
     assert response.status_code == 200
     assert mock_notif.status == "read"
 
 def test_get_preferences(client, mock_db_session):
-    mock_pref = Preference(id="p-1", user_id=1, sms_enabled=True, email_enabled=False, in_app_enabled=True)
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174001"
+    mock_pref = Preference(id=valid_uuid, user_id=1, sms_enabled=True, email_enabled=False, in_app_enabled=True)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_pref
     
     response = client.get("/api/preferences/1")
@@ -119,7 +122,8 @@ def test_update_preferences_new(client, mock_db_session):
 
 def test_update_preferences_existing(client, mock_db_session):
     # Mock existing user
-    mock_pref = Preference(id="p-1", user_id=1, sms_enabled=True)
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174001"
+    mock_pref = Preference(id=valid_uuid, user_id=1, sms_enabled=True)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_pref
     
     payload = {

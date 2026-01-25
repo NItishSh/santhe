@@ -17,6 +17,8 @@ def mock_db_session():
             obj.id = 1
         if hasattr(obj, 'timestamp') and not obj.timestamp:
             obj.timestamp = datetime.utcnow()
+        if hasattr(obj, 'created_at') and not obj.created_at:
+            obj.created_at = datetime.utcnow()
         if hasattr(obj, 'status') and not obj.status:
             obj.status = "pending"
             

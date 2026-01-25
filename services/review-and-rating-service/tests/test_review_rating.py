@@ -51,20 +51,22 @@ def test_create_review(client, mock_db_session):
     mock_db_session.commit.assert_called()
 
 def test_get_review(client, mock_db_session):
-    mock_review = Review(id="uuid-1", rating=5.0, content="Good", reviewer_id=1, reviewed_id=2)
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_review = Review(id=valid_uuid, rating=5.0, content="Good", reviewer_id=1, reviewed_id=2)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_review
     
-    response = client.get("/api/reviews/uuid-1")
+    response = client.get(f"/api/reviews/{valid_uuid}")
     
     assert response.status_code == 200
-    assert response.json()["id"] == "uuid-1"
+    assert response.json()["id"] == valid_uuid
 
 def test_update_review(client, mock_db_session):
-    mock_review = Review(id="uuid-1", rating=5.0, content="Good", reviewer_id=1, reviewed_id=2)
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_review = Review(id=valid_uuid, rating=5.0, content="Good", reviewer_id=1, reviewed_id=2)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_review
     
     response = client.patch(
-        "/api/reviews/uuid-1", 
+        f"/api/reviews/{valid_uuid}", 
         params={"rating": 3, "content": "Average"}
     )
     
@@ -73,10 +75,11 @@ def test_update_review(client, mock_db_session):
     assert mock_review.content == "Average"
 
 def test_delete_review(client, mock_db_session):
-    mock_review = Review(id="uuid-1")
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_review = Review(id=valid_uuid)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_review
     
-    response = client.delete("/api/reviews/uuid-1")
+    response = client.delete(f"/api/reviews/{valid_uuid}")
     
     assert response.status_code == 200
     mock_db_session.delete.assert_called_with(mock_review)
@@ -91,10 +94,11 @@ def test_get_average_rating(client, mock_db_session):
     assert response.json()["average_rating"] == 4.5
 
 def test_flag_for_moderation(client, mock_db_session):
-    mock_review = Review(id="uuid-1", rating=5.0, content="Rude content", reviewer_id=1, reviewed_id=2)
+    valid_uuid = "123e4567-e89b-12d3-a456-426614174000"
+    mock_review = Review(id=valid_uuid, rating=5.0, content="Rude content", reviewer_id=1, reviewed_id=2)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_review
     
-    payload = {"review_id": "uuid-1", "reason": "Harassment"}
+    payload = {"review_id": valid_uuid, "reason": "Harassment"}
     response = client.post("/api/moderate", json=payload)
     
     assert response.status_code == 200
