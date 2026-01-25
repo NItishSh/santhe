@@ -1,20 +1,38 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# Stage 1: Build and Test
+FROM python:3.11-slim as builder
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
+# Copy source code
+COPY . .
 
-# Make port 8000 available to the world outside this container
+# Set environment variables for testing
+ENV PYTHONPATH=.
+ENV DATABASE_URL="sqlite:///:memory:"
+ENV SECRET_KEY="test_secret"
+
+# Run tests
+RUN pytest
+
+# Stage 2: Final Runtime Image
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application artifacts from builder
+COPY --from=builder /app/src /app/src
+COPY --from=builder /app/migrations /app/migrations
+COPY --from=builder /app/alembic.ini /app/alembic.ini
+COPY --from=builder /app/config /app/config
+
 EXPOSE 8000
 
-# Define environment variable
-ENV NAME World
-
-# Run app.py when the container launches
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

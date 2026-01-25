@@ -23,6 +23,7 @@ echo "🚀 Deploying $SERVICE_NAME:$VERSION..."
 echo "🏗 Building Docker image..."
 docker build -t santhe/$SERVICE_NAME:$VERSION $SERVICE_DIR
 
+
 # Load
 echo "📦 Loading image into Kind..."
 kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
