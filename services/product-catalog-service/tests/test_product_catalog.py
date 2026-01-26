@@ -40,7 +40,10 @@ def client(mock_db_session):
 
 def test_create_category_success(client, mock_db_session):
     # Mock behavior: Category does not exist
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = None
+    # Supports both filter_by (legacy) and filter (current)
+    mock_query = mock_db_session.query.return_value
+    mock_query.filter.return_value.first.return_value = None
+    mock_query.filter_by.return_value.first.return_value = None
     
     payload = {"name": "Vegetables"}
     response = client.post("/api/categories", json=payload)
@@ -52,8 +55,13 @@ def test_create_category_success(client, mock_db_session):
 
 def test_create_category_duplicate(client, mock_db_session):
     # Mock behavior: Category exists
-    mock_category = Category(id=1, name="Vegetables")
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_category
+    mock_category = MagicMock()
+    mock_category.id = 1
+    mock_category.name = "Vegetables"
+    
+    mock_query = mock_db_session.query.return_value
+    mock_query.filter.return_value.first.return_value = mock_category
+    mock_query.filter_by.return_value.first.return_value = mock_category
     
     payload = {"name": "Vegetables"}
     response = client.post("/api/categories", json=payload)
@@ -62,7 +70,15 @@ def test_create_category_duplicate(client, mock_db_session):
     assert response.json()["detail"] == "Category already exists"
 
 def test_list_categories(client, mock_db_session):
-    mock_categories = [Category(id=1, name="Veg"), Category(id=2, name="Fruits")]
+    cat1 = MagicMock()
+    cat1.id = 1
+    cat1.name = "Veg"
+    
+    cat2 = MagicMock()
+    cat2.id = 2
+    cat2.name = "Fruits"
+
+    mock_categories = [cat1, cat2]
     mock_db_session.query.return_value.all.return_value = mock_categories
     
     response = client.get("/api/categories")
@@ -88,8 +104,17 @@ def test_create_product_success(client, mock_db_session):
     mock_db_session.commit.assert_called()
 
 def test_get_product_success(client, mock_db_session):
-    mock_product = Product(id=1, name="Carrot", description="Fresh", price=50.0, category_id=1)
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_product
+    mock_product = MagicMock()
+    mock_product.id = 1
+    mock_product.name = "Carrot"
+    mock_product.description = "Fresh"
+    mock_product.price = 50.0
+    mock_product.category_id = 1
+
+    mock_query = mock_db_session.query.return_value
+    # Ensure filter returns a mock query that returns mock_product
+    mock_query.filter.return_value.first.return_value = mock_product
+    mock_query.filter_by.return_value.first.return_value = mock_product
     
     response = client.get("/api/products/1")
     
@@ -97,21 +122,28 @@ def test_get_product_success(client, mock_db_session):
     assert response.json()["name"] == "Carrot"
 
 def test_get_product_not_found(client, mock_db_session):
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = None
+    mock_query = mock_db_session.query.return_value
+    mock_query.filter.return_value.first.return_value = None
+    mock_query.filter_by.return_value.first.return_value = None
     
     response = client.get("/api/products/999")
     
     assert response.status_code == 404
 
 def test_search_products(client, mock_db_session):
-    mock_product = Product(id=1, name="Carrot", description="Fresh", price=50.0, category_id=1)
+    mock_product = MagicMock()
+    mock_product.id = 1
+    mock_product.name = "Carrot"
+    mock_product.description = "Fresh"
+    mock_product.price = 50.0
+    mock_product.category_id = 1
+
     # Mock the query chain: query(Product).filter(...).filter(...).all()
-    # It's tricky with multiple filters. Using a simple mock list return for .all() is usually enough if we trust SQLAlchemy.
-    # We verify that filter was called.
-    
-    # Setup mock to return a list when .all() is called
     mock_query = mock_db_session.query.return_value
-    mock_query.filter.return_value = mock_query # Chaining
+    
+    # Allow unlimited chaining of .filter()
+    mock_query.filter.return_value = mock_query 
+    
     mock_query.all.return_value = [mock_product]
     
     response = client.get("/api/products/search?name=Carrot")

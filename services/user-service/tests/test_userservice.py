@@ -1,7 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from src.main import app, get_db
+from src.main import app, get_db, get_current_user
 from src.models import User
 
 # --- Fixtures ---
@@ -34,8 +34,10 @@ def client(mock_db_session):
 
 def test_register_user_success(client, mock_db_session):
     # Mock behavior: User not found (so we can register a new one)
-    # db.query(User).filter_by(username=...).first() -> None
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = None
+    # db.query(User).filter(...).first() -> None
+    mock_query = mock_db_session.query.return_value
+    mock_query.filter.return_value.first.return_value = None
+    mock_query.filter_by.return_value.first.return_value = None
 
     payload = {
         "username": "newuser",
@@ -50,38 +52,30 @@ def test_register_user_success(client, mock_db_session):
     resp_json = response.json()
     assert resp_json["message"] == "User created successfully"
     assert "user_id" in resp_json 
-    # Since new_user.id is a Mock int (likely), it might be None or a specific mock value.
-    # We just check the key exists.
     
     # Verify DB interactions
     mock_db_session.add.assert_called()
     mock_db_session.commit.assert_called()
     mock_db_session.refresh.assert_called()
 
-# ... (middle tests skipped) ...
-
 def test_read_users_me_success(client, mock_db_session):
-    # Mock verify_token dependency
-    # NOTE: Since /users/me uses Depends(verify_token), we can override that dependency directly 
-    # OR replicate the token logic. Overriding is cleaner for unit tests.
-    
-    from src.services import verify_token
-    async def mock_verify_token_dep(token: str = None):
-        return {"sub": "testuser"}
-    
-    from src.main import verify_token as main_verify_token
-    app.dependency_overrides[main_verify_token] = mock_verify_token_dep
-    
-    # Mock DB return
+    # Mock user object
     mock_user = MagicMock()
     mock_user.id = 1
     mock_user.username = "testuser"
     mock_user.email = "test@example.com"
     mock_user.role = "farmer"
-    
-    mock_db_session.query.return_value.filter_by.return_value.first.return_value = mock_user
 
-    response = client.get("/api/users/me", headers={"Authorization": "Bearer any_token"})
+    # Override get_current_user dependency
+    async def mock_get_current_user_dep():
+        return mock_user
+    
+    app.dependency_overrides[get_current_user] = mock_get_current_user_dep
+    
+    # Header not strictly needed if dependency is overridden, 
+    # but good practice to keep it consistent with real requests logic if we verified token.
+    # Here we skip auth logic entirely via override.
+    response = client.get("/api/users/me")
     
     assert response.status_code == 200
     assert response.json() == {
@@ -92,5 +86,4 @@ def test_read_users_me_success(client, mock_db_session):
     }
     
     # cleanup
-    del app.dependency_overrides[main_verify_token]
-
+    del app.dependency_overrides[get_current_user]

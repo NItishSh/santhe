@@ -1,80 +1,58 @@
-# src/main.py
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, ConfigDict
 from typing import List
-from .database import get_db
-from .models import Order as OrderModel
+from .database import get_db, engine, Base
+from .schemas import OrderCreate, OrderUpdate, OrderResponse
+from .services import OrderService
 
-# Pydantic models
-class OrderBase(BaseModel):
-    farmer_id: int
-    middleman_id: int
-    product_id: int
-    quantity: int
-
-class OrderCreate(OrderBase):
-    pass
-
-class OrderResponse(OrderBase):
-    order_id: int
-    status: str
-    
-    model_config = ConfigDict(from_attributes=True)
-
-class OrderUpdate(BaseModel):
-    status: str
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 @app.get("/api/orders", response_model=List[OrderResponse])
 def read_orders(db: Session = Depends(get_db)):
-    orders = db.query(OrderModel).all()
-    return orders
+    return OrderService.get_orders(db)
 
 @app.post("/api/orders", response_model=OrderResponse)
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
-    db_order = OrderModel(**order.model_dump(), status="pending")
-    db.add(db_order)
-    db.commit()
-    db.refresh(db_order)
-    return db_order
+    return OrderService.create_order(db, order)
 
 @app.get("/api/orders/status", response_model=List[dict])
 def read_orders_status(db: Session = Depends(get_db)):
-    orders = db.query(OrderModel).all()
+    # Specific projection not in Service, but simple enough to keep or move.
+    # Moving logic to controller for simple projection of all orders is acceptable 
+    # if we don't want a specific service method just for "status only".
+    # Or strict layering: OrderService.get_all_statuses(db).
+    # I'll use get_orders and map here to avoid bloat, or cleaner: keep logic here.
+    orders = OrderService.get_orders(db)
     return [{"order_id": o.order_id, "status": o.status} for o in orders]
 
 @app.get("/api/orders/{order_id}", response_model=OrderResponse)
 def read_order(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(OrderModel).filter(OrderModel.order_id == order_id).first()
+    order = OrderService.get_order_by_id(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
 @app.patch("/api/orders/{order_id}", response_model=OrderResponse)
 def update_order(order_id: int, update: OrderUpdate, db: Session = Depends(get_db)):
-    order = db.query(OrderModel).filter(OrderModel.order_id == order_id).first()
+    order = OrderService.get_order_by_id(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    order.status = update.status
-    db.commit()
-    db.refresh(order)
-    return order
+    return OrderService.update_order_status(db, order, update)
 
 @app.delete("/api/orders/{order_id}")
 def delete_order(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(OrderModel).filter(OrderModel.order_id == order_id).first()
+    order = OrderService.get_order_by_id(db, order_id)
     if not order:
          raise HTTPException(status_code=404, detail="Order not found")
-    db.delete(order)
-    db.commit()
+    OrderService.delete_order(db, order)
     return {"message": "Order deleted successfully"}
 
 @app.get("/api/orders/{order_id}/status", response_model=dict)
 def read_order_status(order_id: int, db: Session = Depends(get_db)):
-    order = db.query(OrderModel).filter(OrderModel.order_id == order_id).first()
+    order = OrderService.get_order_by_id(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     return {"order_id": order.order_id, "status": order.status}

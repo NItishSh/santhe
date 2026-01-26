@@ -45,14 +45,19 @@ def test_create_notification_sms(client, mock_db_session):
         "notification_type": "sms"
     }
     
-    # Mock external senders
-    with patch("src.main.send_sms") as mock_send:
+    # Mock external senders in SERVICES, not main
+    with patch("src.services.send_sms") as mock_send:
         response = client.post("/api/notifications", json=payload)
         
         assert response.status_code == 200
         assert "notification_id" in response.json()
         mock_send.assert_called_with(1, "Welcome", "Hello User")
         
+        # Verify call to persistence
+        mock_db_session.add.assert_called()
+        # With commit/refresh logic, the object added might be updated or a new instance.
+        # We can check if add was called. Status check depends on how session handles the object ref.
+        # In mock, the object passed to add is same ref.
         added_notification = mock_db_session.add.call_args[0][0]
         assert added_notification.status == "sent"
 
@@ -65,7 +70,7 @@ def test_create_notification_failure_handler(client, mock_db_session):
     }
     
     # Mock external sender raising Exception
-    with patch("src.main.send_email", side_effect=Exception("SMTP Error")):
+    with patch("src.services.send_email", side_effect=Exception("SMTP Error")):
         response = client.post("/api/notifications", json=payload)
         
         assert response.status_code == 200
@@ -126,6 +131,7 @@ def test_update_preferences_existing(client, mock_db_session):
     mock_pref = Preference(id=valid_uuid, user_id=1, sms_enabled=True)
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_pref
     
+    # Payload matching schema
     payload = {
         "user_id": 1,
         "sms_enabled": False,

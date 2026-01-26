@@ -1,106 +1,73 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, ConfigDict
-from typing import List, Optional
+from typing import List
 from .database import get_db, engine, Base
-from .models import Review
-import uuid
+from .schemas import (
+    ReviewCreate, ReviewUpdate, ReviewResponse,
+    Rating, ModerationRequest
+)
+from .services import ReviewService
 
 # Create tables
 # Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Pydantic models
-class ReviewBase(BaseModel):
-    rating: int
-    content: str
-    reviewer_id: int
-    reviewed_id: int
-
-class ReviewResponse(ReviewBase):
-    id: str
-    model_config = ConfigDict(from_attributes=True)
-
-class Rating(BaseModel):
-    rating: int
-    rated_user_id: int
-
-class ModerationRequest(BaseModel):
-    review_id: str
-    reason: str
-
 @app.post("/api/reviews", response_model=ReviewResponse)
-def create_review(review: ReviewBase, db: Session = Depends(get_db)):
-    new_review = Review(**review.model_dump(), id=str(uuid.uuid4()))
-    db.add(new_review)
-    db.commit()
-    db.refresh(new_review)
-    return new_review
+def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
+    return ReviewService.create_review(db, review)
 
 @app.get("/api/reviews", response_model=List[ReviewResponse])
 def get_all_reviews(db: Session = Depends(get_db)):
-    return db.query(Review).all()
+    return ReviewService.get_all_reviews(db)
 
 @app.get("/api/reviews/{review_id}", response_model=ReviewResponse)
 def get_review(review_id: str, db: Session = Depends(get_db)):
-    review = db.query(Review).filter(Review.id == review_id).first()
+    review = ReviewService.get_review(db, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
     return review
 
 @app.patch("/api/reviews/{review_id}", response_model=ReviewResponse)
-def update_review(review_id: str, rating: int, content: str, db: Session = Depends(get_db)):
-    review = db.query(Review).filter(Review.id == review_id).first()
+def update_review(review_id: str, rating: int = None, content: str = None, db: Session = Depends(get_db)):
+    # Note: Using query params in original code for update?
+    # Original: def update_review(review_id: str, rating: int, content: str, ...)
+    # This implies query parameters if not Pydantic model.
+    # To keep API contract same, we accept them as params and create update object.
+    
+    review_update = ReviewUpdate(rating=rating, content=content)
+    review = ReviewService.get_review(db, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    review.rating = rating
-    review.content = content
-    db.commit()
-    db.refresh(review)
-    return review
+    
+    return ReviewService.update_review(db, review, review_update)
 
 @app.delete("/api/reviews/{review_id}")
 def delete_review(review_id: str, db: Session = Depends(get_db)):
-    review = db.query(Review).filter(Review.id == review_id).first()
+    review = ReviewService.get_review(db, review_id)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    db.delete(review)
-    db.commit()
+    ReviewService.delete_review(db, review)
     return {"message": "Review deleted"}
 
 @app.get("/api/ratings/{user_id}")
 def get_average_rating(user_id: int, db: Session = Depends(get_db)):
-    ratings = db.query(Review.rating).filter(Review.reviewed_id == user_id).all()
-    if not ratings:
-        return {"average_rating": None}
-    average = sum(r[0] for r in ratings) / len(ratings)
+    average = ReviewService.get_average_rating(db, user_id)
     return {"average_rating": average}
 
 @app.post("/api/ratings")
 def rate_user(rating: Rating, db: Session = Depends(get_db)):
-    new_review = Review(
-        rating=rating.rating,
-        content="",
-        reviewer_id=rating.rated_user_id, # Simplified logic from original code, though typically reviewer != reviewed
-        reviewed_id=rating.rated_user_id, 
-        id=str(uuid.uuid4())
-    )
-    db.add(new_review)
-    db.commit()
-    db.refresh(new_review)
+    # Returns {"review_id": ...}
+    new_review = ReviewService.rate_user(db, rating)
     return {"review_id": new_review.id}
 
 @app.post("/api/moderate")
 def flag_for_moderation(request: ModerationRequest, db: Session = Depends(get_db)):
-    review = db.query(Review).filter(Review.id == request.review_id).first()
+    review = ReviewService.flag_for_moderation(db, request)
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    if not review.content.startswith("[MODERATED]"):
-        review.content = "[MODERATED] " + review.content
-        db.commit()
     return {"message": "Review flagged for moderation"}
 
 @app.get("/api/moderated-reviews", response_model=List[ReviewResponse])
 def get_moderated_reviews(db: Session = Depends(get_db)):
-    return db.query(Review).filter(Review.content.like("[MODERATED]%")).all()
+    return ReviewService.get_moderated_reviews(db)
