@@ -1,38 +1,31 @@
-# Stage 1: Build and Test
+# Stage 1: Builder
 FROM python:3.11-slim as builder
-
 WORKDIR /app
-
-# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy source code
 COPY . .
-
-# Set environment variables for testing
+# Run tests (Build fails if tests fail)
 ENV PYTHONPATH=.
 ENV DATABASE_URL="sqlite:///:memory:"
 ENV SECRET_KEY="test_secret"
-
-# Run tests
 RUN pytest
 
-# Stage 2: Final Runtime Image
+# Stage 2: Runtime
 FROM python:3.11-slim
-
+# Create non-root user
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 appuser
 WORKDIR /app
-
-# Install dependencies
+# Copy installed dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application artifacts from builder
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/migrations /app/migrations
-COPY --from=builder /app/alembic.ini /app/alembic.ini
-COPY --from=builder /app/config /app/config
-
+# Copy app code
+COPY src/ src/
+COPY migrations/ migrations/
+COPY alembic.ini .
+COPY config/ config/
+# Change ownership
+RUN chown -R appuser:appgroup /app
+USER 1001
 EXPOSE 8000
-
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
