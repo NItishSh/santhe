@@ -8,7 +8,7 @@ from .schemas import (
     PasswordForgot, PasswordReset, Token, LoginRequest
 )
 from .services import UserService, AuthService
-from typing import List
+
 
 # Create tables
 Base.metadata.create_all(bind=engine)

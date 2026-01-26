@@ -3,7 +3,7 @@ from typing import Optional
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 from config.settings import settings
-from .models import User, Role
+from .models import User
 from .schemas import UserCreate, UserUpdate, RoleUpdate
 
 class AuthService:

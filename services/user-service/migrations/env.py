@@ -14,7 +14,7 @@ sys.path.append(os.getcwd())
 from config.settings import settings
 from src.database import Base
 # Import all models here so Alembic can see them
-from src.models import User # Adjust based on your actual model file
+from src.models import User  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

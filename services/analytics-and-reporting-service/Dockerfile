@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.11-slim as builder
+FROM python:3.11.8-slim-bookworm AS builder
 WORKDIR /app
 
 # Create virtual environment
@@ -7,17 +7,22 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 COPY . .
 
 # Run tests (Build fails if tests fail)
 ENV PYTHONPATH=.
 ENV DATABASE_URL="sqlite:///:memory:"
-ENV SECRET_KEY="test_secret"
+ARG SECRET_KEY="test_secret"
 RUN pytest
 
+
+# Stage: Lint
+FROM builder AS lint
+RUN ruff check .
+
 # Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.11.8-slim-bookworm
 
 # Create non-root user
 RUN addgroup --system --gid 1001 appgroup && \

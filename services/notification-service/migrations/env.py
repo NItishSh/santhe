@@ -10,7 +10,7 @@ sys.path.append(os.getcwd())
 from config.settings import settings
 from src.database import Base
 # Import models to ensure they are registered with Base.metadata
-from src import models
+from src import models  # noqa: F401
 
 config = context.config
 
