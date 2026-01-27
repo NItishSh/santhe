@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy import Column, Integer, String, Enum, Date
 from sqlalchemy.ext.declarative import declarative_base
 
 import enum
@@ -23,6 +23,12 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     role = Column(Enum(Role))
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    address = Column(String, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
+    payment_method_token = Column(String, nullable=True)
 
     def set_password(self, password):
         self.hashed_password = pwd_context.hash(password)

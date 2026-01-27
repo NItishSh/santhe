@@ -155,7 +155,7 @@ for service_dir in services/*; do
     fi
 done
 
-echo "🎉 Deployment Complete! Access web at http://localhost"
+echo "🎉 Deployment Complete! Access web at http://localhost:8080"
 
 # Expose Web UI
 echo "🌍 Starting Port Forward (Web UI -> localhost:8080)..."

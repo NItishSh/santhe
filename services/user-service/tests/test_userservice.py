@@ -65,6 +65,12 @@ def test_read_users_me_success(client, mock_db_session):
     mock_user.username = "testuser"
     mock_user.email = "test@example.com"
     mock_user.role = "farmer"
+    mock_user.first_name = None
+    mock_user.last_name = None
+    mock_user.phone_number = None
+    mock_user.address = None
+    mock_user.date_of_birth = None
+    mock_user.payment_method_token = None
 
     # Override get_current_user dependency
     async def mock_get_current_user_dep():
@@ -82,7 +88,13 @@ def test_read_users_me_success(client, mock_db_session):
         "id": 1,
         "username": "testuser",
         "email": "test@example.com",
-        "role": "farmer"
+        "role": "farmer",
+        "first_name": None,
+        "last_name": None,
+        "phone_number": None,
+        "address": None,
+        "date_of_birth": None,
+        "payment_method_token": None
     }
     
     # cleanup

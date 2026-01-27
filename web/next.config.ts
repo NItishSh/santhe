@@ -37,7 +37,28 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/users/:path*',
+        destination: `${process.env.USER_SERVICE_URL || 'http://user-service:8000/api'}/users/:path*`,
+      },
+      {
+        source: '/api/auth/:path*',
+        destination: `${process.env.USER_SERVICE_URL || 'http://user-service:8000/api'}/auth/:path*`,
+      },
+      {
+        source: '/api/products/:path*',
+        destination: `${process.env.PRODUCT_SERVICE_URL || 'http://product-catalog-service:8000/api'}/products/:path*`,
+      },
+      {
+        source: '/api/categories/:path*',
+        destination: `${process.env.PRODUCT_SERVICE_URL || 'http://product-catalog-service:8000/api'}/categories/:path*`,
+      },
+    ];
+  },
 };
+
 
 
 export default nextConfig;

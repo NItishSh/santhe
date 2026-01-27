@@ -66,9 +66,12 @@ tolerations: []
 
 affinity: {}
 
-env:
   - name: NODE_ENV
     value: "production"
+  - name: USER_SERVICE_URL
+    value: "http://user-service:8000/api"
+  - name: PRODUCT_SERVICE_URL
+    value: "http://product-catalog-service:8000/api"
 
 # Config needed if using Istio Ingress
 istio:

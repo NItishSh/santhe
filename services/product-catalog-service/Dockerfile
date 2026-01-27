@@ -13,8 +13,7 @@ COPY . .
 # Run tests (Build fails if tests fail)
 ENV PYTHONPATH=.
 ENV DATABASE_URL="sqlite:///:memory:"
-ARG SECRET_KEY="test_secret"
-RUN pytest
+RUN SECRET_KEY="test_secret" pytest
 
 
 # Stage: Lint

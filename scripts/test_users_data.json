@@ -1,0 +1,97 @@
+[
+  {
+    "username": "aarav0",
+    "password": "password123",
+    "email": "aarav0@example.com",
+    "role": "farmer",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYXJhdjAiLCJleHAiOjE3Njk0ODc1NDB9.Bq5-_P2C2Z-sbYgQi1n2pTim_VjZsY3P4BzWIi5CBhI",
+    "profile": {
+      "id": 7,
+      "username": "aarav0",
+      "email": "aarav0@example.com",
+      "role": "farmer",
+      "first_name": "Aarav",
+      "last_name": "Patel",
+      "phone_number": "9876543200",
+      "address": "880 Farm Rd, Village 0",
+      "date_of_birth": "1990-01-01",
+      "payment_method_token": "upi-aarav0@okaxis"
+    }
+  },
+  {
+    "username": "sai5",
+    "password": "password123",
+    "email": "sai5@example.com",
+    "role": "farmer",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJzYWk1IiwiZXhwIjoxNzY5NDg3NTkwfQ.Yrx9fStQ9j2gh8-0-qd08-c-MWJ_yv-8MN5GYgWFOGs",
+    "profile": {
+      "id": 10,
+      "username": "sai5",
+      "email": "sai5@example.com",
+      "role": "farmer",
+      "first_name": "Sai",
+      "last_name": "Rao",
+      "phone_number": "9876543205",
+      "address": "238 Farm Rd, Village 5",
+      "date_of_birth": "1995-01-01",
+      "payment_method_token": "upi-sai5@okaxis"
+    }
+  },
+  {
+    "username": "reyansh6",
+    "password": "password123",
+    "email": "reyansh6@example.com",
+    "role": "admin",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyZXlhbnNoNiIsImV4cCI6MTc2OTQ4NzYxM30.Mmsq37bkIDaXNAlJ_lw4xtOP0NxoR-nSQNwbEFq-tKo",
+    "profile": {
+      "id": 11,
+      "username": "reyansh6",
+      "email": "reyansh6@example.com",
+      "role": "admin",
+      "first_name": "Reyansh",
+      "last_name": "Reddy",
+      "phone_number": "9876543206",
+      "address": "965 Farm Rd, Village 6",
+      "date_of_birth": "1996-01-01",
+      "payment_method_token": "upi-reyansh6@okaxis"
+    }
+  },
+  {
+    "username": "krishna8",
+    "password": "password123",
+    "email": "krishna8@example.com",
+    "role": "admin",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJrcmlzaG5hOCIsImV4cCI6MTc2OTQ4NzYzN30.w1BDZ1mg8MLGDA99d2VG25AL8VWo7yw_RW9Ccec0fxU",
+    "profile": {
+      "id": 13,
+      "username": "krishna8",
+      "email": "krishna8@example.com",
+      "role": "admin",
+      "first_name": "Krishna",
+      "last_name": "Iyer",
+      "phone_number": "9876543208",
+      "address": "947 Farm Rd, Village 8",
+      "date_of_birth": "1998-01-01",
+      "payment_method_token": "upi-krishna8@okaxis"
+    }
+  },
+  {
+    "username": "ishaan9",
+    "password": "password123",
+    "email": "ishaan9@example.com",
+    "role": "admin",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpc2hhYW45IiwiZXhwIjoxNzY5NDg3NjUzfQ.Ig-mFU8Ol9TjIEY7DEfErxJ7Ng4cZVkTXFKH2_IlFLg",
+    "profile": {
+      "id": 14,
+      "username": "ishaan9",
+      "email": "ishaan9@example.com",
+      "role": "admin",
+      "first_name": "Ishaan",
+      "last_name": "Verma",
+      "phone_number": "9876543209",
+      "address": "222 Farm Rd, Village 9",
+      "date_of_birth": "1999-01-01",
+      "payment_method_token": "upi-ishaan9@okaxis"
+    }
+  }
+]
