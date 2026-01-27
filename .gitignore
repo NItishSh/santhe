@@ -85,3 +85,4 @@ logs/
 
 # Docker
 .dockerenv
+scripts/test_users_data.json

@@ -66,6 +66,7 @@ tolerations: []
 
 affinity: {}
 
+env:
   - name: NODE_ENV
     value: "production"
   - name: USER_SERVICE_URL
