@@ -58,7 +58,9 @@ export default function CartPage() {
 
             if (response.ok) {
                 const data: CartResponse = await response.json()
-                setCartItems(data.items || [])
+                // Sort items by ID to maintain consistent order
+                const sortedItems = [...(data.items || [])].sort((a, b) => a.id - b.id)
+                setCartItems(sortedItems)
 
                 // Fetch product details for each item
                 if (data.items && data.items.length > 0) {
