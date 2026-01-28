@@ -54,8 +54,8 @@ fi
 echo "🚀 Quick Deploy: $SERVICES"
 echo ""
 
-# Deploy services in parallel (up to 4 at a time)
-deploy_service() {
+# Deploy a single service (for parallel execution)
+deploy_service_quick() {
     local service=$1
     echo "[$service] Starting..."
     
@@ -64,21 +64,7 @@ deploy_service() {
         return 1
     fi
     
-    # Build
-    if ! docker build -q -t santhe/$service:latest services/$service > /dev/null 2>&1; then
-        echo "[$service] ❌ Build failed"
-        return 1
-    fi
-    echo "[$service] Built ✓"
-    
-    # Load into Kind
-    if ! kind load docker-image santhe/$service:latest --name $CLUSTER_NAME > /dev/null 2>&1; then
-        echo "[$service] ❌ Load failed"
-        return 1
-    fi
-    echo "[$service] Loaded ✓"
-    
-    # Helm upgrade (quick, no wait)
+    # Use deploy-service.sh for actual deployment
     if ! ./scripts/deploy-service.sh "$service" latest > /dev/null 2>&1; then
         echo "[$service] ❌ Deploy failed"
         return 1
@@ -86,8 +72,8 @@ deploy_service() {
     echo "[$service] ✅ Deployed"
 }
 
-# Run deployments (parallel if multiple)
-export -f deploy_service
+# Run deployments
+export -f deploy_service_quick
 export CLUSTER_NAME
 
 SERVICE_COUNT=$(echo $SERVICES | wc -w)
@@ -95,17 +81,10 @@ if [ "$SERVICE_COUNT" -eq 1 ]; then
     # Single service - show full output
     ./scripts/deploy-service.sh $SERVICES latest
 else
-    # Multiple services - run in parallel
-    echo "$SERVICES" | tr ' ' '\n' | xargs -P4 -I{} bash -c 'deploy_service "{}"'
+    # Multiple services - run in parallel (up to 4 at a time)
+    echo "$SERVICES" | tr ' ' '\n' | xargs -P4 -I{} bash -c 'deploy_service_quick "{}"'
 fi
 
 echo ""
 print_status "Quick deploy complete!"
-
-# Restart pods to pick up new images
-echo "♻️  Restarting deployments..."
-for service in $SERVICES; do
-    kubectl rollout restart deployment/$service -n santhe 2>/dev/null || true
-done
-
 echo "🎉 Done! Services deployed: $SERVICES"

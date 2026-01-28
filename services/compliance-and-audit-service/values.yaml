@@ -1,0 +1,34 @@
+# Compliance Service - Light
+image:
+  repository: santhe/compliance-and-audit-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: compliance-and-audit-service
+fullnameOverride: compliance-and-audit-service
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+istio:
+  enabled: true
+  virtualService:
+    enabled: true
+    hosts:
+      - compliance-and-audit-service.local
+    routes:
+      - destination:
+          host: compliance-and-audit-service
+          port:
+            number: 8000
+
+migrations:
+  enabled: true

@@ -1,0 +1,34 @@
+# Feedback Service - Light
+image:
+  repository: santhe/feedback-and-support-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: feedback-and-support-service
+fullnameOverride: feedback-and-support-service
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+istio:
+  enabled: true
+  virtualService:
+    enabled: true
+    hosts:
+      - feedback-and-support-service.local
+    routes:
+      - destination:
+          host: feedback-and-support-service
+          port:
+            number: 8000
+
+migrations:
+  enabled: true

@@ -1,0 +1,34 @@
+# Payment Service - Medium (transactional)
+image:
+  repository: santhe/payment-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: payment-service
+fullnameOverride: payment-service
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 96Mi
+  limits:
+    cpu: 300m
+    memory: 192Mi
+
+istio:
+  enabled: true
+  virtualService:
+    enabled: true
+    hosts:
+      - payment-service.local
+    routes:
+      - destination:
+          host: payment-service
+          port:
+            number: 8000
+
+migrations:
+  enabled: true

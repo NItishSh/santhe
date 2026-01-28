@@ -1,0 +1,34 @@
+# Order Management Service - Medium (transactional)
+image:
+  repository: santhe/order-management-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: order-management-service
+fullnameOverride: order-management-service
+
+service:
+  port: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 96Mi
+  limits:
+    cpu: 300m
+    memory: 192Mi
+
+istio:
+  enabled: true
+  virtualService:
+    enabled: true
+    hosts:
+      - order-management-service.local
+    routes:
+      - destination:
+          host: order-management-service
+          port:
+            number: 8000
+
+migrations:
+  enabled: true
