@@ -11,6 +11,8 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [addingToCart, setAddingToCart] = useState<number | null>(null);
+  const [cartMessage, setCartMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -44,6 +46,27 @@ export default function Home() {
     window.location.reload();
   };
 
+  const handleAddToCart = async (product: Product) => {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    setAddingToCart(product.id);
+    setCartMessage(null);
+
+    try {
+      await api.cart.addItem(product.id, 1);
+      setCartMessage(`✅ ${product.name} added to cart!`);
+      setTimeout(() => setCartMessage(null), 3000);
+    } catch (err) {
+      setCartMessage(`❌ Failed to add ${product.name}`);
+      setTimeout(() => setCartMessage(null), 3000);
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center p-4 bg-background text-foreground">
       <header className="w-full max-w-6xl flex justify-between items-center py-6 mb-8">
@@ -65,6 +88,11 @@ export default function Home() {
       </header>
 
       <main className="w-full max-w-6xl">
+        {cartMessage && (
+          <div className="fixed top-4 right-4 z-50 bg-white shadow-lg rounded-lg px-6 py-3 border">
+            {cartMessage}
+          </div>
+        )}
         <section className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Fresh Direct from Farmers</h2>
           <p className="text-xl text-muted-foreground">Marketplace for everyone.</p>
@@ -84,7 +112,14 @@ export default function Home() {
                   <p className="text-lg font-bold text-primary">₹{product.price}</p>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" variant="secondary">Add to Cart</Button>
+                  <Button
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={addingToCart === product.id}
+                  >
+                    {addingToCart === product.id ? 'Adding...' : 'Add to Cart'}
+                  </Button>
                 </CardFooter>
               </Card>
             ))}
