@@ -38,9 +38,9 @@ kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
 # Deploy
 echo "☸️ Deploying to Kubernetes..."
 
-# DB Connection String
+# DB Connection String - use psycopg3 driver
 DB_NAME="${SERVICE_NAME//-/_}_db"
-DATABASE_URL="postgresql://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
+DATABASE_URL="postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
 
 echo "   - Using values from: $VALUES_FILE"
 echo "   - Configured DB: $DATABASE_URL"
