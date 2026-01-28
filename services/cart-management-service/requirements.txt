@@ -10,3 +10,10 @@ alembic==1.13.1
 pytest==8.0.0
 httpx==0.26.0
 ruff==0.2.0
+
+# Observability
+prometheus-fastapi-instrumentator==6.1.0
+prometheus-client==0.19.0
+
+# Rate Limiting
+slowapi==0.1.9

@@ -6,9 +6,14 @@ from .database import engine, Base
 from .routes import router
 from .health import router as health_router
 from .logging_config import setup_logging, get_logger
+from .metrics import setup_metrics
+from .rate_limit import get_limiter, setup_rate_limiting
 
 # Setup structured logging
 logger = setup_logging("user-service")
+
+# Setup rate limiter
+limiter = get_limiter()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +29,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Setup Prometheus metrics (exposes /metrics endpoint)
+setup_metrics(app, "user-service")
+
+# Setup rate limiting
+setup_rate_limiting(app, limiter)
 
 # CORS middleware
 app.add_middleware(
@@ -57,3 +68,4 @@ app.include_router(router)
 @app.get("/")
 def root():
     return {"message": "User Service API", "version": "1.0.0"}
+

@@ -6,12 +6,19 @@ from .database import engine, Base
 from .routes import router
 from .health import router as health_router
 from .logging_config import setup_logging, get_logger
+from .metrics import setup_metrics
+from .rate_limit import get_limiter, setup_rate_limiting
 
+# Setup structured logging
 logger = setup_logging("notification-service")
+
+# Setup rate limiter
+limiter = get_limiter()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting notification-service")
+    # Create tables on startup
     Base.metadata.create_all(bind=engine)
     yield
     logger.info("Shutting down notification-service")
@@ -23,6 +30,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Setup Prometheus metrics (exposes /metrics endpoint)
+setup_metrics(app, "notification-service")
+
+# Setup rate limiting
+setup_rate_limiting(app, limiter)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
