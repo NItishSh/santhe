@@ -42,7 +42,7 @@ export default function CartPage() {
 
     const fetchCart = async () => {
         try {
-            const token = localStorage.getItem('access_token')
+            const token = localStorage.getItem('token')
             const response = await fetch('/api/cart', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -72,7 +72,7 @@ export default function CartPage() {
         }
 
         try {
-            const token = localStorage.getItem('access_token')
+            const token = localStorage.getItem('token')
             await fetch(`/api/cart/items/${itemId}`, {
                 method: 'PUT',
                 headers: {
@@ -89,7 +89,7 @@ export default function CartPage() {
 
     const removeItem = async (itemId: number) => {
         try {
-            const token = localStorage.getItem('access_token')
+            const token = localStorage.getItem('token')
             await fetch(`/api/cart/items/${itemId}`, {
                 method: 'DELETE',
                 headers: {
