@@ -1,34 +1,11 @@
-import urllib.request
-import urllib.parse
-import json
 import sys
 import time
+from scripts.api_client import ApiClient
 
-BASE_URL = "http://localhost:8080/api"
+client = ApiClient()
 
 def request(method, endpoint, data=None):
-    url = f"{BASE_URL}{endpoint}"
-    req = urllib.request.Request(url, method=method)
-    req.add_header('Content-Type', 'application/json')
-    
-    if data:
-        body = json.dumps(data).encode('utf-8')
-        req.data = body
-
-    try:
-        with urllib.request.urlopen(req) as response:
-            if response.status >= 200 and response.status < 300:
-                if response.status != 204: # No content
-                    return json.loads(response.read().decode())
-                return {}
-    except urllib.error.HTTPError as e:
-        # If resource exists (400 bad request often used for 'already exists' in this api), ignore
-        if e.code != 400:
-             print(f"Request failed: {e.code} {e.reason} for {url}")
-        return None
-    except Exception as e:
-        print(f"Connection error: {e}")
-        return None
+    return client.request(method, endpoint, data)
 
 def seed():
     print("🌱 Seeding Santhe Data...")

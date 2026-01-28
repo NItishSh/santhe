@@ -12,16 +12,17 @@ if [ -z "$SERVICE_NAME" ]; then
     exit 1
 fi
 
-SERVICE_DIR="services/$SERVICE_NAME"
-VALUES_FILE="$SERVICE_DIR/values.yaml"
-
-if [ ! -d "$SERVICE_DIR" ]; then
-    echo "❌ Service directory '$SERVICE_DIR' not found."
-    exit 1
+# Handle Web App Special Case
+if [ "$SERVICE_NAME" == "web" ]; then
+    SERVICE_DIR="web"
+    VALUES_FILE="web/values.yaml"
+else
+    SERVICE_DIR="services/$SERVICE_NAME"
+    VALUES_FILE="$SERVICE_DIR/values.yaml"
 fi
 
-if [ ! -f "$VALUES_FILE" ]; then
-    echo "❌ Values file '$VALUES_FILE' not found."
+if [ ! -d "$SERVICE_DIR" ]; then
+    echo "❌ Directory '$SERVICE_DIR' not found."
     exit 1
 fi
 
@@ -38,21 +39,26 @@ kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
 # Deploy
 echo "☸️ Deploying to Kubernetes..."
 
-# DB Connection String - use psycopg3 driver
-DB_NAME="${SERVICE_NAME//-/_}_db"
-DATABASE_URL="postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
+# DB Connection String (Only for microservices)
+HELM_ARGS=""
+if [ "$SERVICE_NAME" != "web" ]; then
+    DB_NAME="${SERVICE_NAME//-/_}_db"
+    DATABASE_URL="postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
+    
+    echo "   - Configured DB: $DATABASE_URL"
+    
+    HELM_ARGS="--set env[0].name=DATABASE_URL --set env[0].value=$DATABASE_URL --set env[1].name=SECRET_KEY --set env[1].value=supersecret"
+fi
 
-echo "   - Using values from: $VALUES_FILE"
-echo "   - Configured DB: $DATABASE_URL"
+if [ -f "$VALUES_FILE" ]; then
+    echo "   - Using values from: $VALUES_FILE"
+    HELM_ARGS="$HELM_ARGS -f $VALUES_FILE"
+fi
 
-# Deploy using per-service values.yaml
+# Deploy
 helm upgrade --install $SERVICE_NAME charts/microservice \
     --namespace santhe \
-    -f "$VALUES_FILE" \
     --set image.tag="$VERSION" \
-    --set env[0].name=DATABASE_URL \
-    --set env[0].value="$DATABASE_URL" \
-    --set env[1].name=SECRET_KEY \
-    --set env[1].value="supersecret"
+    $HELM_ARGS
 
 echo "✅ $SERVICE_NAME deployed successfully!"

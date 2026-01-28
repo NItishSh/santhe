@@ -1,42 +1,14 @@
-import urllib.request
-import urllib.error
-import json
 import time
 import random
+import json
+from scripts.api_client import ApiClient
 
-BASE_URL = "http://localhost:8080/api"
-OUTPUT_FILE = "test_users_data.json"
-
-roles = ["farmer", "middleman", "admin"]
-first_names = ["Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Sai", "Reyansh", "Ayaan", "Krishna", "Ishaan"]
-last_names = ["Patel", "Sharma", "Singh", "Kumar", "Gupta", "Rao", "Reddy", "Nair", "Iyer", "Verma"]
-
-users_created = []
-
-print(f"Starting seed of 10 users...")
+client = ApiClient()
 
 def make_request(url, method="GET", data=None, headers=None):
-    if headers is None:
-        headers = {}
-    if data:
-        data = json.dumps(data).encode("utf-8")
-        headers["Content-Type"] = "application/json"
-    
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req) as response:
-            if response.status >= 200 and response.status < 300:
-                resp_data = response.read().decode("utf-8")
-                return json.loads(resp_data) if resp_data else {}
-            else:
-                print(f"Request failed: {response.status} {response.read().decode('utf-8')}")
-                return None
-    except urllib.error.HTTPError as e:
-        print(f"HTTPError: {e.code} {e.read().decode('utf-8')}")
-        return None
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+    # Strip base URL if present since client adds it
+    endpoint = url.replace("http://localhost:8080/api", "")
+    return client.request(method, endpoint, data, headers)
 
 for i in range(10):
     role = random.choice(roles)

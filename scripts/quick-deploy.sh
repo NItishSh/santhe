@@ -13,9 +13,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-print_status() { echo -e "${GREEN}✅ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
-print_error() { echo -e "${RED}❌ $1${NC}"; }
+# Import common utilities
+source scripts/common.sh
 
 # Check if Kind cluster exists
 if ! kind get clusters 2>/dev/null | grep -q "^$CLUSTER_NAME$"; then
@@ -25,10 +24,7 @@ fi
 
 # Determine which services to deploy
 if [ "$1" == "--changed" ]; then
-    # Get services with changes (staged or unstaged)
-    SERVICES=$(git diff --name-only HEAD 2>/dev/null | grep "^services/" | cut -d'/' -f2 | sort -u)
-    SERVICES="$SERVICES $(git diff --cached --name-only 2>/dev/null | grep "^services/" | cut -d'/' -f2 | sort -u)"
-    SERVICES=$(echo "$SERVICES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+    SERVICES=$(get_changed_services)
     
     if [ -z "$SERVICES" ]; then
         print_warning "No changed services detected. Use --all or specify services."
@@ -36,7 +32,8 @@ if [ "$1" == "--changed" ]; then
     fi
     echo "🔍 Detected changed services: $SERVICES"
 elif [ "$1" == "--all" ]; then
-    SERVICES=$(ls -d services/*/ 2>/dev/null | xargs -n1 basename)
+    # All services + web
+    SERVICES="web $(ls -d services/*/ 2>/dev/null | xargs -n1 basename)"
 else
     SERVICES="$@"
 fi
