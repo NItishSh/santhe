@@ -143,8 +143,8 @@ EOF
 if ! grep -q "alembic" "$SERVICE_DIR/requirements.txt"; then
     echo "alembic>=1.13.0" >> "$SERVICE_DIR/requirements.txt"
 fi
-if ! grep -q "psycopg2-binary" "$SERVICE_DIR/requirements.txt"; then
-    echo "psycopg2-binary>=2.9.9" >> "$SERVICE_DIR/requirements.txt"
+if ! grep -q "psycopg" "$SERVICE_DIR/requirements.txt"; then
+    echo "psycopg[binary]>=3.2.0" >> "$SERVICE_DIR/requirements.txt"
 fi
 
 # 6. Comment out create_all in main.py
