@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM python:3.11.8-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 WORKDIR /app
 
 # Create virtual environment
@@ -21,7 +21,7 @@ FROM builder AS lint
 RUN ruff check .
 
 # Stage 2: Runtime
-FROM python:3.11.8-slim-bookworm
+FROM python:3.13-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1
 
