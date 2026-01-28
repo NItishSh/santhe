@@ -118,7 +118,7 @@ echo "🏗 Building and Deploying Services..."
 echo "➡️ Processing web (Frontend)..."
 docker build -t santhe/web:latest ./web
 kind load docker-image santhe/web:latest --name $CLUSTER_NAME
-helm upgrade --install web charts/microservice -f infrastructure/manifests/web-values.yaml --create-namespace --namespace santhe
+helm upgrade --install web charts/microservice -f web/values.yaml --create-namespace --namespace santhe
 
 # 6b. Deploy Backend Microservices
 # 6b. Deploy Backend Microservices
