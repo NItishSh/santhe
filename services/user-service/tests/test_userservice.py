@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from src.main import app, get_db, get_current_user
+from src.main import app
+from src.database import get_db
+from src.dependencies import get_current_user
 
 
 # --- Fixtures ---
@@ -25,8 +27,13 @@ def client(mock_db_session):
             pass
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+    
+    # Patch create_all to avoid DB connection during startup
+    from unittest.mock import patch
+    with patch("src.main.Base.metadata.create_all"):
+        with TestClient(app) as c:
+            yield c
+    
     # Clean up override
     app.dependency_overrides = {}
 
@@ -73,7 +80,8 @@ def test_read_users_me_success(client, mock_db_session):
     mock_user.payment_method_token = None
 
     # Override get_current_user dependency
-    async def mock_get_current_user_dep():
+    # Now that get_current_user is sync (def), mock should be sync too
+    def mock_get_current_user_dep():
         return mock_user
     
     app.dependency_overrides[get_current_user] = mock_get_current_user_dep

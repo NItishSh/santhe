@@ -2,7 +2,8 @@ import pytest
 import uuid
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
-from src.main import app, get_db
+from src.main import app
+from src.routes import get_db
 from src.models import Notification, Preference
 
 # --- Fixtures ---
@@ -13,9 +14,6 @@ def mock_db_session():
     session = MagicMock()
     
     def side_effect_refresh(obj):
-        # Notification IDs effectively generated in code (uuid), but status update?
-        # Preference ID also uuid.
-        # Just to be safe:
         if hasattr(obj, 'id') and not obj.id:
             obj.id = str(uuid.uuid4())
             
@@ -31,8 +29,12 @@ def client(mock_db_session):
             pass
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+    
+    # Patch create_all
+    with patch("src.main.Base.metadata.create_all"):
+        with TestClient(app) as c:
+            yield c
+            
     app.dependency_overrides = {}
 
 # --- Tests ---
@@ -92,7 +94,8 @@ def test_update_notification_status(client, mock_db_session):
     mock_notif = Notification(id=valid_uuid, status="sent")
     mock_db_session.query.return_value.filter.return_value.first.return_value = mock_notif
     
-    response = client.patch(f"/api/notifications/{valid_uuid}?status=read")
+    # Updated to expect JSON body as per cleaner design in routes.py
+    response = client.patch(f"/api/notifications/{valid_uuid}", json={"status": "read"})
     
     assert response.status_code == 200
     assert mock_notif.status == "read"

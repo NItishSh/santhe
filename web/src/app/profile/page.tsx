@@ -1,49 +1,26 @@
 "use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { api, User } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/hooks/useUser";
+import { useAuth } from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { user, loading } = useUser();
+    const { logout, isAuthenticated, isLoading: authLoading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                router.push('/login');
-                return;
-            }
+        if (!authLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, authLoading, router]);
 
-            try {
-                const userData = await api.users.me();
-                setUser(userData);
-            } catch (error) {
-                console.error("Failed to load profile", error);
-                // If token invalid, maybe clear it and redirect? 
-                // For now just stay on page but show error or maybe redirect
-                localStorage.removeItem('token');
-                router.push('/login');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUser();
-    }, [router]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        router.push('/login');
-    };
-
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <div className="text-center">
@@ -124,7 +101,7 @@ export default function ProfilePage() {
                             <div className="text-sm text-muted-foreground">
                                 Member since {new Date().getFullYear()}
                             </div>
-                            <Button variant="destructive" onClick={handleLogout}>
+                            <Button variant="destructive" onClick={logout}>
                                 Log Out
                             </Button>
                         </CardFooter>

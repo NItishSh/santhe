@@ -55,6 +55,17 @@ const nextConfig: NextConfig = {
         source: '/api/categories/:path*',
         destination: `${process.env.PRODUCT_SERVICE_URL || 'http://product-catalog-service:8000/api'}/categories/:path*`,
       },
+      {
+        source: '/api/cart/:path*',
+        destination: `${process.env.CART_SERVICE_URL || 'http://cart-management-service:8000/api/cart'}/:path*`, // Fixed path handling? 
+        // Destination should strictly follow source pattern or be base.
+        // /api/cart/items -> http://cart-service/api/cart/items
+        // If destination is http://cart-service:8000/api/cart/:path*, then :path* matches suffix.
+      },
+      {
+        source: '/api/orders/:path*',
+        destination: `${process.env.ORDER_SERVICE_URL || 'http://order-management-service:8000/api'}/orders/:path*`,
+      },
     ];
   },
 };

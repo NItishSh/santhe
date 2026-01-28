@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from datetime import datetime
-from src.main import app, get_db
+from src.main import app
+from src.routes import get_db
 from src.models import Price, Bid
 
 # --- Fixtures ---
@@ -30,8 +31,13 @@ def client(mock_db_session):
             pass
     
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
+    
+    # Patch create_all
+    from unittest.mock import patch
+    with patch("src.main.Base.metadata.create_all"):
+        with TestClient(app) as c:
+            yield c
+            
     app.dependency_overrides = {}
 
 # --- Tests for Prices ---

@@ -160,3 +160,22 @@ echo "🎉 Deployment Complete! Access web at http://localhost:8080"
 # Expose Web UI
 echo "🌍 Starting Port Forward (Web UI -> localhost:8080)..."
 kubectl port-forward svc/web 8080:3000 -n santhe > /dev/null 2>&1 &
+
+# Wait for port-forward to be ready
+echo "⏳ Waiting for Web UI to be reachable..."
+attempts=0
+until curl -s http://localhost:8080 > /dev/null; do
+    attempts=$((attempts+1))
+    if [ $attempts -gt 30 ]; then
+      echo "⚠️  Web UI not reachable after 30 attempts, skipping seeding."
+      exit 0
+    fi
+    sleep 2
+done
+
+# Seed Data
+echo "🌱 Seeding Users and Data..."
+python3 scripts/seed_users.py
+python3 scripts/seed_data.py
+
+echo "✅ Setup Complete!"

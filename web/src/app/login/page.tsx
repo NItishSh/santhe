@@ -53,11 +53,11 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit}>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email">Username or Email</Label>
                             <Input
                                 id="email"
-                                type="email"
-                                placeholder="m@example.com"
+                                type="text"
+                                placeholder="Username or m@example.com"
                                 required
                                 value={email}
                                 onChange={(e) => {
