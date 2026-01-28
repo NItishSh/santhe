@@ -115,10 +115,9 @@ echo "$PROVISION_SQL" | kubectl run postgres-init --image=postgres:alpine --rest
 # 6. Build and Deploy All Services
 echo "🏗 Building and Deploying Services..."
 # 6a. Deploy Web App
+# 6a. Deploy Web App
 echo "➡️ Processing web (Frontend)..."
-docker build -t santhe/web:latest ./web
-kind load docker-image santhe/web:latest --name $CLUSTER_NAME
-helm upgrade --install web charts/microservice -f web/values.yaml --create-namespace --namespace santhe
+./scripts/deploy-service.sh web latest
 
 # 6b. Deploy Backend Microservices
 # 6b. Deploy Backend Microservices

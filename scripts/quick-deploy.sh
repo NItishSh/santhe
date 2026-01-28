@@ -56,7 +56,12 @@ deploy_service_quick() {
     local service=$1
     echo "[$service] Starting..."
     
-    if [ ! -d "services/$service" ]; then
+    local dir="services/$service"
+    if [ "$service" == "web" ]; then
+        dir="web"
+    fi
+
+    if [ ! -d "$dir" ]; then
         echo "[$service] ❌ Not found, skipping"
         return 1
     fi
