@@ -264,7 +264,10 @@ export default function CartPage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                                    <Button
+                                        className="w-full bg-green-600 hover:bg-green-700"
+                                        onClick={() => router.push('/checkout')}
+                                    >
                                         Proceed to Checkout
                                     </Button>
                                 </CardFooter>
