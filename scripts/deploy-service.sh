@@ -39,20 +39,16 @@ kind load docker-image santhe/$SERVICE_NAME:$VERSION --name $CLUSTER_NAME
 # Deploy
 echo "☸️ Deploying to Kubernetes..."
 
-# DB Connection String (Only for microservices)
-HELM_ARGS=""
-if [ "$SERVICE_NAME" != "web" ]; then
-    DB_NAME="${SERVICE_NAME//-/_}_db"
-    DATABASE_URL="postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/$DB_NAME"
-    
-    echo "   - Configured DB: $DATABASE_URL"
-    
-    HELM_ARGS="--set env[0].name=DATABASE_URL --set env[0].value=$DATABASE_URL --set env[1].name=SECRET_KEY --set env[1].value=supersecret"
-fi
+# Handle DB Connection String if not using values.yaml, 
+# but now we expect values.yaml to exist and contain it.
+# We'll just pass -f VALUES_FILE.
 
 if [ -f "$VALUES_FILE" ]; then
     echo "   - Using values from: $VALUES_FILE"
-    HELM_ARGS="$HELM_ARGS -f $VALUES_FILE"
+    HELM_ARGS="-f $VALUES_FILE"
+else
+    echo "❌ Values file required but not found."
+    exit 1
 fi
 
 # Deploy

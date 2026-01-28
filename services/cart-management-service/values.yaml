@@ -32,3 +32,9 @@ istio:
 
 migrations:
   enabled: true
+
+env:
+  - name: DATABASE_URL
+    value: "postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/cart_management_service_db"
+  - name: SECRET_KEY
+    value: "supersecret"
