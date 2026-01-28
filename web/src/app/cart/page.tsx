@@ -6,26 +6,33 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/hooks/useAuth"
 
+interface Product {
+    id: number;
+    name: string;
+    price: number;
+}
+
 interface CartItem {
     id: number;
     product_id: number;
-    product_name: string;
     quantity: number;
-    unit_price: number;
-    total_price: number;
 }
 
-interface Cart {
+interface CartItemWithProduct extends CartItem {
+    product?: Product;
+}
+
+interface CartResponse {
     id: number;
-    user_id: number;
+    username: string;
     items: CartItem[];
-    total: number;
 }
 
 export default function CartPage() {
     const { isAuthenticated, isLoading: authLoading } = useAuth()
     const router = useRouter()
-    const [cart, setCart] = useState<Cart | null>(null)
+    const [cartItems, setCartItems] = useState<CartItemWithProduct[]>([])
+    const [products, setProducts] = useState<Map<number, Product>>(new Map())
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -50,11 +57,15 @@ export default function CartPage() {
             })
 
             if (response.ok) {
-                const data = await response.json()
-                setCart(data)
+                const data: CartResponse = await response.json()
+                setCartItems(data.items || [])
+
+                // Fetch product details for each item
+                if (data.items && data.items.length > 0) {
+                    await fetchProductDetails(data.items.map(item => item.product_id))
+                }
             } else if (response.status === 404) {
-                // No cart yet - that's okay
-                setCart({ id: 0, user_id: 0, items: [], total: 0 })
+                setCartItems([])
             } else {
                 setError('Failed to load cart')
             }
@@ -62,6 +73,25 @@ export default function CartPage() {
             setError('Failed to connect to cart service')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const fetchProductDetails = async (productIds: number[]) => {
+        try {
+            // Fetch all products and filter - simpler approach
+            const response = await fetch('/api/products/search')
+            if (response.ok) {
+                const allProducts: Product[] = await response.json()
+                const productMap = new Map<number, Product>()
+                allProducts.forEach(p => {
+                    if (productIds.includes(p.id)) {
+                        productMap.set(p.id, p)
+                    }
+                })
+                setProducts(productMap)
+            }
+        } catch (err) {
+            console.error('Failed to fetch product details', err)
         }
     }
 
@@ -74,7 +104,7 @@ export default function CartPage() {
         try {
             const token = localStorage.getItem('token')
             await fetch(`/api/cart/items/${itemId}`, {
-                method: 'PUT',
+                method: 'PATCH',  // Changed from PUT to PATCH
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -100,6 +130,15 @@ export default function CartPage() {
         } catch (err) {
             setError('Failed to remove item')
         }
+    }
+
+    const getItemTotal = (item: CartItemWithProduct): number => {
+        const product = products.get(item.product_id)
+        return product ? product.price * item.quantity : 0
+    }
+
+    const getCartTotal = (): number => {
+        return cartItems.reduce((sum, item) => sum + getItemTotal(item), 0)
     }
 
     if (authLoading || isLoading) {
@@ -135,7 +174,7 @@ export default function CartPage() {
                     </div>
                 )}
 
-                {cart && cart.items.length === 0 ? (
+                {cartItems.length === 0 ? (
                     <Card className="text-center py-12">
                         <CardContent>
                             <div className="text-6xl mb-4">🛒</div>
@@ -150,49 +189,56 @@ export default function CartPage() {
                     <div className="grid md:grid-cols-3 gap-8">
                         {/* Cart Items */}
                         <div className="md:col-span-2 space-y-4">
-                            {cart?.items.map((item) => (
-                                <Card key={item.id}>
-                                    <CardContent className="flex items-center justify-between py-4">
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-lg">{item.product_name}</h3>
-                                            <p className="text-gray-500">₹{(item.unit_price ?? 0).toFixed(2)} each</p>
-                                        </div>
-
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                >
-                                                    -
-                                                </Button>
-                                                <span className="w-8 text-center font-medium">{item.quantity}</span>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                >
-                                                    +
-                                                </Button>
+                            {cartItems.map((item) => {
+                                const product = products.get(item.product_id)
+                                return (
+                                    <Card key={item.id}>
+                                        <CardContent className="flex items-center justify-between py-4">
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-lg">
+                                                    {product?.name || `Product #${item.product_id}`}
+                                                </h3>
+                                                <p className="text-gray-500">
+                                                    ₹{(product?.price ?? 0).toFixed(2)} each
+                                                </p>
                                             </div>
 
-                                            <p className="font-semibold w-24 text-right">
-                                                ₹{(item.total_price ?? 0).toFixed(2)}
-                                            </p>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    >
+                                                        -
+                                                    </Button>
+                                                    <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    >
+                                                        +
+                                                    </Button>
+                                                </div>
 
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:text-red-700"
-                                                onClick={() => removeItem(item.id)}
-                                            >
-                                                ✕
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                                <p className="font-semibold w-24 text-right">
+                                                    ₹{getItemTotal(item).toFixed(2)}
+                                                </p>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700"
+                                                    onClick={() => removeItem(item.id)}
+                                                >
+                                                    ✕
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })}
                         </div>
 
                         {/* Order Summary */}
@@ -203,8 +249,8 @@ export default function CartPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="flex justify-between">
-                                        <span>Subtotal</span>
-                                        <span>₹{(cart?.total ?? 0).toFixed(2)}</span>
+                                        <span>Subtotal ({cartItems.length} items)</span>
+                                        <span>₹{getCartTotal().toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Delivery</span>
@@ -212,7 +258,7 @@ export default function CartPage() {
                                     </div>
                                     <div className="border-t pt-4 flex justify-between font-bold text-lg">
                                         <span>Total</span>
-                                        <span>₹{(cart?.total ?? 0).toFixed(2)}</span>
+                                        <span>₹{getCartTotal().toFixed(2)}</span>
                                     </div>
                                 </CardContent>
                                 <CardFooter>
