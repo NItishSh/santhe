@@ -35,6 +35,6 @@ migrations:
 
 env:
   - name: DATABASE_URL
-    value: "postgresql+psycopg://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/user_service_db"
+    value: "postgresql+psycopg://postgres:postgres@postgres-postgresql.database.svc.cluster.local:5432/user_service_db"
   - name: SECRET_KEY
     value: "supersecret"

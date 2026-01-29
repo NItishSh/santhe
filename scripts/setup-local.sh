@@ -19,6 +19,11 @@ echo "🔧 Configuring Istio..."
 helm repo add istio https://istio-release.storage.googleapis.com/charts 2>/dev/null || true
 helm repo update
 
+# 2.b Install Gateway API CRDs (Required for Ambient / Waypoint)
+echo "🔗 Installing Gateway API CRDs..."
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml
+
+
 # 3. Install Istio Base
 if ! helm status istio-base -n istio-system >/dev/null 2>&1; then
     echo "Installing Istio Base..."
@@ -27,12 +32,28 @@ else
     echo "✅ Istio Base already installed."
 fi
 
+# 3.b Install Istio CNI (Required for Ambient)
+if ! helm status istio-cni -n istio-system >/dev/null 2>&1; then
+    echo "Installing Istio CNI..."
+    helm upgrade --install istio-cni istio/cni -n istio-system --set profile=ambient --wait
+else
+    echo "✅ Istio CNI already installed."
+fi
+
 # 4. Install Istiod
 if ! helm status istiod -n istio-system >/dev/null 2>&1; then
     echo "Installing Istiod..."
-    helm upgrade --install istiod istio/istiod -n istio-system --wait
+    helm upgrade --install istiod istio/istiod -n istio-system --set profile=ambient --wait
 else
     echo "✅ Istiod already installed."
+fi
+
+# 4.b Install Ztunnel (Ambient L4 Proxy)
+if ! helm status ztunnel -n istio-system >/dev/null 2>&1; then
+    echo "Installing Ztunnel..."
+    helm upgrade --install ztunnel istio/ztunnel -n istio-system --wait
+else
+    echo "✅ Ztunnel already installed."
 fi
 
 # 5. Install Istio Ingress Gateway
@@ -76,30 +97,34 @@ fi
 
 echo "✅ Cluster and Istio Setup Complete!"
 
-# 7. Install Istio Addons & MetalLB (Observability + LoadBalancer)
-echo "🛠 Setting up Addons (Observability + MetalLB)..."
+# 7. Install Istio Addons (Observability)
+echo "🛠 Setting up Addons (Observability)..."
 ./scripts/setup-addons.sh
 
-# 8. Prepare Application Namespace
-echo "🏗 Creating 'santhe' namespace and enabling Istio injection..."
+# 8. Prepare Application Namespace (Ambient Mode)
+echo "🏗 Creating 'santhe' namespace and enabling Ambient Mode..."
 kubectl create namespace santhe --dry-run=client -o yaml | kubectl apply -f -
-kubectl label namespace santhe istio-injection=enabled --overwrite
-echo "✅ Namespace 'santhe' ready with Istio injection."
+kubectl label namespace santhe istio-injection- istio.io/dataplane-mode=ambient --overwrite
+echo "✅ Namespace 'santhe' ready with Ambient Mode enabled."
 
 # 9. Apply Istio Gateway Configuration
 echo "🚪 Applying Istio Gateway..."
 kubectl apply -f infrastructure/manifests/gateway.yaml
+echo "🛡️ Applying Shared Waypoint Proxy..."
+kubectl apply -f infrastructure/manifests/waypoint.yaml
 
 # 10. Install PostgreSQL (Shared Instance)
 echo "🐘 Installing PostgreSQL..."
-if ! helm status postgres -n santhe >/dev/null 2>&1; then
+# Create dedicated database namespace (No Ambient Mesh)
+kubectl create namespace database --dry-run=client -o yaml | kubectl apply -f -
+
+if ! helm status postgres -n database >/dev/null 2>&1; then
     helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
     helm repo update
     
     # Install Postgres with a fixed password for local dev ease
     helm upgrade --install postgres bitnami/postgresql \
-        --namespace santhe \
-        --create-namespace \
+        --namespace database \
         --set auth.postgresPassword=postgres \
         --set primary.persistence.enabled=false \
         --wait
@@ -121,8 +146,8 @@ done
 
 # Execute DB creation
 # We use echo to pipe the SQL into the psql command running inside the pod
-echo "$PROVISION_SQL" | kubectl run postgres-init --image=postgres:alpine --restart=Never --rm -i -- \
-    psql postgresql://postgres:postgres@postgres-postgresql.santhe.svc.cluster.local:5432/postgres \
+echo "$PROVISION_SQL" | kubectl run postgres-init --namespace database --image=postgres:alpine --restart=Never --rm -i -- \
+    psql postgresql://postgres:postgres@postgres-postgresql.database.svc.cluster.local:5432/postgres \
     || echo "⚠️  Database provisioning had errors (likely 'already exists'), checking readiness..."
 
 # 6. Build and Deploy All Services

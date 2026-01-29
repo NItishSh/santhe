@@ -57,12 +57,12 @@ SERVICE=$1
 
 case "$SERVICE" in
     "web")
-        port_forward "web" "santhe" "svc/web" "8080:3000"
-        echo -e "${BLUE}🌍 Web UI: http://localhost:8080${NC}"
+        port_forward "web" "santhe" "svc/web" "3000:3000"
+        echo -e "${BLUE}🌍 Web UI: http://localhost:3000${NC}"
         ;;
     "gateway")
-        port_forward "gateway" "istio-system" "svc/istio-ingressgateway" "8081:80"
-        echo -e "${BLUE}🚪 API Gateway: http://localhost:8081${NC}"
+        port_forward "gateway" "istio-system" "svc/istio-ingressgateway" "8080:80"
+        echo -e "${BLUE}🚪 API Gateway: http://localhost:8080${NC}"
         ;;
     "kiali")
         port_forward "kiali" "istio-system" "svc/kiali" "20001:20001"
@@ -79,6 +79,10 @@ case "$SERVICE" in
     "prometheus")
         port_forward "prometheus" "istio-system" "svc/prometheus" "9090:9090"
         echo -e "${BLUE}🔥 Prometheus: http://localhost:9090${NC}"
+        ;;
+    "postgres")
+        port_forward "postgres" "database" "svc/postgres-postgresql" "5432:5432"
+        echo -e "${BLUE}🐘 Postgres: localhost:5432${NC}"
         ;;
     "all")
         $0 web

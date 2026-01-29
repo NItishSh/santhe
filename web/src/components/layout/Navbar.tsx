@@ -30,7 +30,10 @@ export function Navbar() {
 
     const navLinks = [
         { name: "Home", href: "/" },
-        { name: "Categories", href: "#categories" }, // Anchor for now
+        {
+            name: "Categories",
+            href: pathname === "/" ? "#categories" : "/#categories"
+        },
     ];
 
     return (

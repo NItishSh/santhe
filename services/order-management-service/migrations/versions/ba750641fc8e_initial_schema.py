@@ -1,16 +1,17 @@
 """initial_schema
 
-Revision ID: 2ee4c06556cd
-Revises: 5ebacf275ef4
-Create Date: 2026-01-25 15:55:16.146856
+Revision ID: ba750641fc8e
+Revises: 
+Create Date: 2026-01-29 18:40:02.012420
 
 """
-
+from alembic import op
+import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '2ee4c06556cd'
-down_revision = '5ebacf275ef4'
+revision = 'ba750641fc8e'
+down_revision = None
 branch_labels = None
 depends_on = None
 
