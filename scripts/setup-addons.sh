@@ -11,6 +11,18 @@ echo "📊 Installing Istio Observability Stack (Prometheus, Grafana, Jaeger, Ki
 kubectl apply -f infrastructure/manifests/istio-addons/
 check_status "Istio Addons Application"
 
+# 1.b Install Loki (Log Aggregation)
+echo "🪵  Installing Loki Stack (Loki + Promtail)..."
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm upgrade --install loki grafana/loki-stack \
+  --namespace istio-system \
+  --set grafana.enabled=false \
+  --set prometheus.enabled=false \
+  --set loki.isDefault=false \
+  --set promtail.enabled=true
+check_status "Loki Stack Installation"
+
 # 2. Install MetalLB
 echo "⚖️  Installing MetalLB LoadBalancer..."
 kubectl apply -f infrastructure/manifests/metallb/metallb-native.yaml
