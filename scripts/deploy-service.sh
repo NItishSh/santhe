@@ -57,4 +57,7 @@ helm upgrade --install $SERVICE_NAME charts/microservice \
     --set image.tag="$VERSION" \
     $HELM_ARGS
 
+echo "🔄 Restarting rollout for $SERVICE_NAME..."
+kubectl rollout restart deployment/$SERVICE_NAME -n santhe
+
 echo "✅ $SERVICE_NAME deployed successfully!"
