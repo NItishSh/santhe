@@ -86,4 +86,4 @@ logs/
 # Docker
 .dockerenv
 **/test_users_data.json
-
+**/.agent/skills
