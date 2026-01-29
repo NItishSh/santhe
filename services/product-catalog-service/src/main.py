@@ -18,8 +18,8 @@ limiter = get_limiter()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting product-catalog-service")
-    # Create tables on startup
-    Base.metadata.create_all(bind=engine)
+    # Tables are now managed by Alembic migrations via Helm Job
+    # Base.metadata.create_all(bind=engine)
     yield
     logger.info("Shutting down product-catalog-service")
 

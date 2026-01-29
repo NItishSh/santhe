@@ -9,8 +9,8 @@ from .schemas import (
 )
 from .services import PaymentService
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Tables managed by Alembic
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

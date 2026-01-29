@@ -5,8 +5,8 @@ from .database import get_db, engine, Base
 from .schemas import OrderCreate, OrderUpdate, OrderResponse
 from .services import OrderService
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Tables managed by Alembic
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
