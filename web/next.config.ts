@@ -66,6 +66,10 @@ const nextConfig: NextConfig = {
         source: '/api/orders/:path*',
         destination: `${process.env.ORDER_SERVICE_URL || 'http://order-management-service:8000/api'}/orders/:path*`,
       },
+      {
+        source: '/api/payments/:path*',
+        destination: `${process.env.PAYMENT_SERVICE_URL || 'http://payment-service:8000/api'}/payments/:path*`,
+      },
     ];
   },
 };

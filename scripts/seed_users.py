@@ -1,13 +1,27 @@
 import time
 import random
 import json
+import os
+import sys
+
+# Add parent dir to path to allow import "from scripts.api_client"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from scripts.api_client import ApiClient
+
 
 client = ApiClient()
 
+BASE_URL = "http://localhost:8080/api"
+OUTPUT_FILE = "test_users_data.json"
+users_created = []
+roles = ["farmer", "middleman"]
+first_names = ["John", "Jane", "Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi"]
+last_names = ["Doe", "Smith", "Johnson", "Brown", "Williams", "Jones", "Garcia", "Miller", "Davis", "Rodriguez"]
+
 def make_request(url, method="GET", data=None, headers=None):
     # Strip base URL if present since client adds it
-    endpoint = url.replace("http://localhost:8080/api", "")
+    endpoint = url.replace(BASE_URL, "")
     return client.request(method, endpoint, data, headers)
 
 for i in range(10):

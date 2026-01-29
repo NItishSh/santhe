@@ -73,6 +73,12 @@ env:
     value: "http://user-service:8000/api"
   - name: PRODUCT_SERVICE_URL
     value: "http://product-catalog-service:8000/api"
+  - name: ORDER_SERVICE_URL
+    value: "http://order-management-service:8000/api"
+  - name: PAYMENT_SERVICE_URL
+    value: "http://payment-service:8000/api"
+  - name: CART_SERVICE_URL
+    value: "http://cart-management-service:8000/api"
 
 # Config needed if using Istio Ingress
 istio:

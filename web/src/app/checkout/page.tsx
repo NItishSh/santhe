@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
+import { motion } from "framer-motion"
+import { CreditCard, Smartphone, CheckCircle2, User as UserIcon, MapPin, Phone } from "lucide-react"
 
 interface Product {
     id: number;
@@ -137,16 +137,13 @@ export default function CheckoutPage() {
                 'Content-Type': 'application/json'
             }
 
-            // 1. Create Order for EACH item (Backend limitation: Order = Single Item)
-            // In a real app, backend should support multi-item orders.
-            // We use Promise.all to do this concurrently.
-
+            // 1. Create Order for EACH item
             const orderPromises = cartItems.map(item => {
                 return fetch('/api/orders', {
                     method: 'POST',
                     headers,
                     body: JSON.stringify({
-                        farmer_id: 1, // Default Placeholder as per plan
+                        farmer_id: 1,
                         middleman_id: user.id,
                         product_id: item.product_id,
                         quantity: item.quantity
@@ -177,14 +174,14 @@ export default function CheckoutPage() {
             }
 
             // 3. Clear Cart
-            // Since our backend doesn't allow bulk delete yet, delete items individually
             const deletePromises = cartItems.map(item =>
                 fetch(`/api/cart/items/${item.id}`, { method: 'DELETE', headers })
             )
             await Promise.all(deletePromises)
 
-            // Success!
             toast.success("Order placed successfully!")
+            // Small delay to allow toast to be seen
+            await new Promise(resolve => setTimeout(resolve, 1500))
             router.push('/') // Or a success page
 
         } catch (error) {
@@ -197,8 +194,8 @@ export default function CheckoutPage() {
 
     if (authLoading || isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+            <div className="flex items-center justify-center min-h-screen bg-orange-50/30">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
         )
     }
@@ -206,117 +203,158 @@ export default function CheckoutPage() {
     const total = calculateTotal()
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12">
-            <div className="container mx-auto px-4 max-w-4xl">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+        <div className="min-h-screen bg-orange-50/30 py-12">
+            <div className="container mx-auto px-4 max-w-5xl">
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-8"
+                >
+                    <h1 className="text-3xl font-bold font-heading text-gray-800">Checkout</h1>
+                    <p className="text-muted-foreground">Detailed summary of your order</p>
+                </motion.div>
 
                 <div className="grid md:grid-cols-3 gap-8">
-                    {/* Left Column: Details */}
+                    {/* Left Column: Forms */}
                     <div className="md:col-span-2 space-y-6">
 
-                        {/* Shipping Address */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Shipping Details</CardTitle>
-                                <CardDescription>Confirm where you want your order delivered.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
+                        {/* Shipping Info */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-sm"
+                        >
+                            <h2 className="text-xl font-bold font-heading mb-4 flex items-center gap-2">
+                                <MapPin className="text-primary w-5 h-5" /> Shipping Details
+                            </h2>
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Full Name</Label>
-                                    <Input id="name" value={user?.username || ""} disabled />
+                                    <Label className="text-muted-foreground flex items-center gap-2">
+                                        <UserIcon className="w-4 h-4" /> Full Name
+                                    </Label>
+                                    <Input value={user?.username || ""} disabled className="bg-gray-50/50" />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="address">Address</Label>
+                                    <Label className="text-muted-foreground flex items-center gap-2">
+                                        <MapPin className="w-4 h-4" /> Address
+                                    </Label>
                                     <Input
-                                        id="address"
                                         value={address}
                                         onChange={(e) => setAddress(e.target.value)}
                                         placeholder="123 Farm Road, Village..."
+                                        className="h-12"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Label className="text-muted-foreground flex items-center gap-2">
+                                        <Phone className="w-4 h-4" /> Phone Number
+                                    </Label>
                                     <Input
-                                        id="phone"
                                         value={phone}
                                         onChange={(e) => setPhone(e.target.value)}
                                         placeholder="+91..."
+                                        className="h-12"
                                     />
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </motion.div>
 
-                        {/* Payment Method */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Payment Method</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div
-                                        className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-2 ${paymentMethod === 'upi' ? 'border-green-600 bg-green-50' : 'hover:bg-gray-50'}`}
-                                        onClick={() => setPaymentMethod('upi')}
-                                    >
-                                        <span className="text-2xl">📱</span>
-                                        <span className="font-medium">UPI</span>
-                                    </div>
-                                    <div
-                                        className={`border rounded-lg p-4 cursor-pointer flex flex-col items-center gap-2 ${paymentMethod === 'card' ? 'border-green-600 bg-green-50' : 'hover:bg-gray-50'}`}
-                                        onClick={() => setPaymentMethod('card')}
-                                    >
-                                        <span className="text-2xl">💳</span>
-                                        <span className="font-medium">Card</span>
-                                    </div>
+                        {/* Payment Selection */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-sm"
+                        >
+                            <h2 className="text-xl font-bold font-heading mb-4 flex items-center gap-2">
+                                <CreditCard className="text-primary w-5 h-5" /> Payment Method
+                            </h2>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div
+                                    className={`relative border rounded-xl p-4 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'upi' ? 'border-primary bg-primary/5 shadow-md scale-[1.02]' : 'border-gray-200 hover:border-primary/50 hover:bg-white'}`}
+                                    onClick={() => setPaymentMethod('upi')}
+                                >
+                                    {paymentMethod === 'upi' && (
+                                        <div className="absolute top-2 right-2 text-primary">
+                                            <CheckCircle2 className="w-5 h-5 fill-primary/10" />
+                                        </div>
+                                    )}
+                                    <Smartphone className={`w-8 h-8 ${paymentMethod === 'upi' ? 'text-primary' : 'text-gray-400'}`} />
+                                    <span className="font-semibold">UPI</span>
                                 </div>
-                            </CardContent>
-                        </Card>
-
+                                <div
+                                    className={`relative border rounded-xl p-4 cursor-pointer flex flex-col items-center justify-center gap-2 transition-all duration-300 ${paymentMethod === 'card' ? 'border-primary bg-primary/5 shadow-md scale-[1.02]' : 'border-gray-200 hover:border-primary/50 hover:bg-white'}`}
+                                    onClick={() => setPaymentMethod('card')}
+                                >
+                                    {paymentMethod === 'card' && (
+                                        <div className="absolute top-2 right-2 text-primary">
+                                            <CheckCircle2 className="w-5 h-5 fill-primary/10" />
+                                        </div>
+                                    )}
+                                    <CreditCard className={`w-8 h-8 ${paymentMethod === 'card' ? 'text-primary' : 'text-gray-400'}`} />
+                                    <span className="font-semibold">Card</span>
+                                </div>
+                            </div>
+                        </motion.div>
                     </div>
 
-                    {/* Right Column: Summary */}
-                    <div>
-                        <Card className="sticky top-4">
-                            <CardHeader>
-                                <CardTitle>Order Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {cartItems.map(item => {
-                                        const product = products.get(item.product_id)
-                                        return (
-                                            <div key={item.id} className="flex justify-between text-sm">
-                                                <span>{product?.name || "Unknown Item"} (x{item.quantity})</span>
-                                                <span className="font-medium">₹{((product?.price || 0) * item.quantity).toFixed(2)}</span>
+                    {/* Right Column: Order Summary */}
+                    <div className="relative">
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="sticky top-24 bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/60 shadow-lg"
+                        >
+                            <h2 className="text-xl font-bold font-heading mb-6 border-b pb-4">Order Summary</h2>
+
+                            <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                                {cartItems.map(item => {
+                                    const product = products.get(item.product_id)
+                                    return (
+                                        <div key={item.id} className="flex justify-between text-sm py-2 border-b border-dashed border-gray-100 last:border-0">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{product?.name || "Item"}</span>
+                                                <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
                                             </div>
-                                        )
-                                    })}
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between font-medium">
-                                    <span>Subtotal</span>
+                                            <span className="font-medium">₹{((product?.price || 0) * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+
+                            <div className="space-y-2 pt-4 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Subtotal</span>
                                     <span>₹{total.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-green-600">
-                                    <span>Delivery</span>
-                                    <span>Free</span>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Delivery</span>
+                                    <span className="text-green-600 font-medium">Free</span>
                                 </div>
-                                <Separator />
-                                <div className="flex justify-between font-bold text-lg">
+                                <div className="flex justify-between font-bold text-xl pt-2 text-primary">
                                     <span>Total</span>
                                     <span>₹{total.toFixed(2)}</span>
                                 </div>
-                            </CardContent>
-                            <CardFooter>
-                                <Button
-                                    className="w-full bg-green-600 hover:bg-green-700"
-                                    size="lg"
-                                    onClick={handlePlaceOrder}
-                                    disabled={isProcessing}
-                                >
-                                    {isProcessing ? "Processing..." : `Pay ₹${total.toFixed(2)}`}
-                                </Button>
-                            </CardFooter>
-                        </Card>
+                            </div>
+
+                            <Button
+                                className="w-full mt-6 shadow-lg shadow-orange-500/20 text-lg py-6"
+                                size="lg"
+                                onClick={handlePlaceOrder}
+                                disabled={isProcessing}
+                            >
+                                {isProcessing ? (
+                                    <span className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/50 border-t-white"></div>
+                                        Processing...
+                                    </span>
+                                ) : (
+                                    `Pay ₹${total.toFixed(2)}`
+                                )}
+                            </Button>
+                        </motion.div>
                     </div>
                 </div>
             </div>

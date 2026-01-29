@@ -1,5 +1,11 @@
 import sys
 import time
+import urllib.parse
+import os
+
+# Add parent dir to path to allow import "from scripts.api_client"
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from scripts.api_client import ApiClient
 
 client = ApiClient()
