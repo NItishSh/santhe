@@ -86,7 +86,7 @@ istio:
   virtualService:
     enabled: true
     gateways: 
-      - santhe-gateway
+      - santhe/santhe-gateway
     hosts: 
       - "*"
     routes:
