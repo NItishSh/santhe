@@ -83,7 +83,7 @@ This section details how to run the full Santhe platform locally using Kind (Kub
 - **Helm**: `brew install helm`
 
 ### Quick Start
-To spin up the entire environment (Cluster + Istio + Postgres + 11 Microservices + Frontend):
+To spin up the entire environment (Cluster + Istio + MetalLB + Observability + Postgres + 11 Microservices + Frontend):
 
 ```bash
 chmod +x scripts/*.sh
@@ -91,14 +91,35 @@ chmod +x scripts/*.sh
 ```
 
 This script will:
-1. Create a Kind cluster (`santhe-local`).
-2. Install **Istio** (Service Mesh) and **PostgreSQL**.
-3. Build all microservices and the web frontend.
-4. Deploy them to the cluster with auto-configured DB connections.
+1.  Create a Kind cluster (`santhe-local`).
+2.  Install **Istio** (Service Mesh) and **PostgreSQL**.
+3.  Install **Observability Stack** (Prometheus, Grafana, Jaeger, Kiali) and **MetalLB** (LoadBalancer).
+4.  Build all microservices and the web frontend.
+5.  Deploy them to the cluster with auto-configured DB connections.
 
 ### Accessing the Application
-- **Frontend**: http://localhost:8080
-- **API Gateway**: http://localhost:8080/api (via Next.js rewriting to Ingress)
+
+**Option 1: Port-Forwarding Helper (Recommended for macOS/Windows)**
+We provide a helper script to expose services to your local machine:
+
+```bash
+./scripts/port-forward.sh all      # Expose everything
+./scripts/port-forward.sh web      # Expose Web UI only
+./scripts/port-forward.sh gateway  # Expose API Gateway
+./scripts/port-forward.sh stop     # Stop all forwards
+```
+
+-   **Frontend**: http://localhost:8080
+-   **API Gateway**: http://localhost:8081
+-   **Kiali**: http://localhost:20001
+-   **Grafana**: http://localhost:3000
+-   **Jaeger**: http://localhost:16686
+-   **Prometheus**: http://localhost:9090
+
+**Option 2: Direct LoadBalancer IP (Linux / Native Docker)**
+Since MetalLB is configured, the Ingress Gateway receives an external IP (e.g., `172.18.255.xxx`).
+-   On Linux (where Docker uses the host network directly), you can access this IP directly.
+-   On macOS/Windows (Docker Desktop), this IP is **not reachable** from the host due to VM isolation. Use Option 1.
 
 ### Managing Services
 To update a specific service (rebuild image + redeploy + run migrations):
