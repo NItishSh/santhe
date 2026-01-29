@@ -87,3 +87,4 @@ logs/
 .dockerenv
 **/test_users_data.json
 **/.agent/skills
+/infrastructure/manifests/metallb-config.yaml

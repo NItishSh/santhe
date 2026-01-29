@@ -76,6 +76,9 @@ fi
 
 echo "✅ Cluster and Istio Setup Complete!"
 
+# 7. Install Istio Addons & MetalLB (Observability + LoadBalancer)
+echo "🛠 Setting up Addons (Observability + MetalLB)..."
+./scripts/setup-addons.sh
 
 # 8. Install PostgreSQL (Shared Instance)
 echo "🐘 Installing PostgreSQL..."

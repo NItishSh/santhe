@@ -10,6 +10,14 @@ NC='\033[0m'
 print_status() { echo -e "${GREEN}✅ $1${NC}"; }
 print_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 print_error() { echo -e "${RED}❌ $1${NC}"; }
+check_status() {
+    if [ $? -eq 0 ]; then
+        print_status "$1"
+    else
+        print_error "$1 Failed"
+        exit 1
+    fi
+}
 
 # Detect changed services using git
 get_changed_services() {
