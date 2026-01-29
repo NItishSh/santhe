@@ -15,9 +15,11 @@ import Link from "next/link"
 import { useState } from "react"
 import { api } from "@/lib/api"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function LoginPage() {
     const router = useRouter()
+    const { login } = useAuth()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
@@ -30,12 +32,11 @@ export default function LoginPage() {
         }
 
         try {
-            const data = await api.auth.login(email.split('@')[0], password); // Using email part as username 
-
-            localStorage.setItem('token', data.access_token)
-            // alert("Login successful!") // Removed as per user request
-            router.push("/")
-            window.dispatchEvent(new Event("storage")) // Trigger storage event for other components if needed (though local state might need context)
+            await login({
+                username: email.split('@')[0],
+                password: password
+            });
+            // router.push("/") // Handled in AuthContext
         } catch (err: any) {
             setError(err.message || "Invalid credentials")
         }

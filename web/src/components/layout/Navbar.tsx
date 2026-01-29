@@ -5,30 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, api } from "@/lib/api";
 import { UserMenu } from "@/components/UserMenu";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 
 export function Navbar() {
-    const [user, setUser] = useState<User | null>(null);
+    const { user, logout } = useAuth();
     const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
-
-    useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem("token");
-            if (token) {
-                try {
-                    const userData = await api.users.me();
-                    setUser(userData);
-                } catch (e) {
-                    console.error("Failed to fetch user", e);
-                }
-            }
-        };
-        fetchUser();
-    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -39,9 +25,7 @@ export function Navbar() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem("token");
-        setUser(null);
-        window.location.href = "/login";
+        logout();
     };
 
     const navLinks = [

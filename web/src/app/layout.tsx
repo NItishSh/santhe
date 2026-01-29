@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/AuthContext";
 
 const rubik = Rubik({
   variable: "--font-heading",
@@ -30,12 +31,14 @@ export default function RootLayout({
       <body
         className={`${rubik.variable} ${nunito.variable} antialiased font-body bg-background text-foreground`}
       >
-        <Navbar />
-        <main className="pt-24 min-h-screen">
-          {children}
-        </main>
-        <Footer />
-        <Toaster />
+        <AuthProvider>
+          <Navbar />
+          <main className="pt-24 min-h-screen">
+            {children}
+          </main>
+          <Footer />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
