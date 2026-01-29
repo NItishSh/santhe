@@ -80,7 +80,17 @@ echo "✅ Cluster and Istio Setup Complete!"
 echo "🛠 Setting up Addons (Observability + MetalLB)..."
 ./scripts/setup-addons.sh
 
-# 8. Install PostgreSQL (Shared Instance)
+# 8. Prepare Application Namespace
+echo "🏗 Creating 'santhe' namespace and enabling Istio injection..."
+kubectl create namespace santhe --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace santhe istio-injection=enabled --overwrite
+echo "✅ Namespace 'santhe' ready with Istio injection."
+
+# 9. Apply Istio Gateway Configuration
+echo "🚪 Applying Istio Gateway..."
+kubectl apply -f infrastructure/manifests/gateway.yaml
+
+# 10. Install PostgreSQL (Shared Instance)
 echo "🐘 Installing PostgreSQL..."
 if ! helm status postgres -n santhe >/dev/null 2>&1; then
     helm repo add bitnami https://charts.bitnami.com/bitnami 2>/dev/null || true
